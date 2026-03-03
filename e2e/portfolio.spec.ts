@@ -123,4 +123,22 @@ test.describe("Portfolio page", () => {
       fullPage: true,
     });
   });
+
+  test("error state shows message when script is empty", async ({ page }) => {
+    await goToPortfolio(page);
+
+    // Clear the strategy textarea
+    await page.locator("textarea").fill("");
+    // Keep assets filled
+    await page.locator('input[placeholder*="AAPL"]').fill("AAPL");
+
+    await page
+      .locator("button", { hasText: /run portfolio backtest/i })
+      .click();
+
+    // The API returns 400 with "script is required" — the page shows it as error
+    await expect(page.locator("text=script is required")).toBeVisible({
+      timeout: 15000,
+    });
+  });
 });

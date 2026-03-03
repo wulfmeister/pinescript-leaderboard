@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import {
   Chart,
   CategoryScale,
@@ -59,6 +59,14 @@ export function PortfolioEquityChart({
   perAsset,
   initialCapital,
 }: Props) {
+  const chartRef = useRef<any>(null);
+
+  useEffect(() => {
+    import("chartjs-plugin-zoom").then((mod) => {
+      Chart.register(mod.default);
+    });
+  }, []);
+
   const labels = useMemo(
     () => combined.map((p) => new Date(p.timestamp).toLocaleDateString()),
     [combined],
@@ -117,6 +125,14 @@ export function PortfolioEquityChart({
               ` ${ctx.dataset.label}: $${Number(ctx.raw).toFixed(2)}`,
           },
         },
+        zoom: {
+          pan: { enabled: true, mode: "x" },
+          zoom: {
+            wheel: { enabled: true },
+            pinch: { enabled: true },
+            mode: "x",
+          },
+        },
       },
       scales: {
         x: {
@@ -140,5 +156,21 @@ export function PortfolioEquityChart({
     [initialCapital],
   );
 
-  return <Line data={data} options={options} />;
+  return (
+    <div className="card">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-white">Portfolio Equity</h2>
+        <button
+          onClick={() => chartRef.current?.resetZoom()}
+          className="btn btn-ghost text-xs"
+        >
+          Reset Zoom
+        </button>
+      </div>
+      <Line ref={chartRef} data={data} options={options} />
+      <p className="text-xs text-zinc-600 mt-2">
+        Scroll to zoom &middot; Drag to pan
+      </p>
+    </div>
+  );
 }

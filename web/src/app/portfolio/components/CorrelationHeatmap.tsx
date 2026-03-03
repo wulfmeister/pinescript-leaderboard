@@ -16,14 +16,14 @@ function correlationToColor(r: number): string {
   if (clamped <= 0) {
     const t = clamped + 1;
     const red = [239, 68, 68] as const;
-    const gray = [55, 65, 81] as const;
-    return `rgb(${lerp(red[0], gray[0], t)},${lerp(red[1], gray[1], t)},${lerp(red[2], gray[2], t)})`;
+    const white = [255, 255, 255] as const;
+    return `rgb(${lerp(red[0], white[0], t)},${lerp(red[1], white[1], t)},${lerp(red[2], white[2], t)})`;
   }
 
   const t = clamped;
-  const gray = [55, 65, 81] as const;
+  const white = [255, 255, 255] as const;
   const green = [34, 197, 94] as const;
-  return `rgb(${lerp(gray[0], green[0], t)},${lerp(gray[1], green[1], t)},${lerp(gray[2], green[2], t)})`;
+  return `rgb(${lerp(white[0], green[0], t)},${lerp(white[1], green[1], t)},${lerp(white[2], green[2], t)})`;
 }
 
 export function CorrelationHeatmap({ matrix, symbols, isMockData }: Props) {
@@ -79,7 +79,7 @@ export function CorrelationHeatmap({ matrix, symbols, isMockData }: Props) {
                 {row.map((value, colIndex) => (
                   <div
                     key={`cell-${rowIndex}-${colIndex}`}
-                    className="flex items-center justify-center rounded text-xs text-white"
+                    className="flex items-center justify-center rounded text-xs text-zinc-900"
                     style={{
                       width: size,
                       height: size,
