@@ -1,0 +1,18 @@
+//@version=5
+strategy("MACD Signal Crossover", overlay=false)
+
+// Parameters
+fastLen = input(12, title="Fast Length")
+slowLen = input(26, title="Slow Length")
+signalLen = input(9, title="Signal Length")
+
+// Calculate MACD
+[macdLine, signalLine, histLine] = ta.macd(close, fastLen, slowLen, signalLen)
+
+// Buy when MACD line crosses above signal line
+if (ta.crossover(macdLine, signalLine))
+    strategy.entry("Long", strategy.long)
+
+// Sell when MACD line crosses below signal line
+if (ta.crossunder(macdLine, signalLine))
+    strategy.close("Long")

@@ -1,0 +1,17 @@
+//@version=5
+strategy("Bollinger Bands Mean Reversion", overlay=true)
+
+// Parameters
+bbPeriod = input(20, title="BB Period")
+bbStdDev = input(2, title="BB Std Dev")
+
+// Calculate Bollinger Bands
+[bbUpper, bbMiddle, bbLower] = ta.bb(close, bbPeriod, bbStdDev)
+
+// Buy when price touches lower band
+if (close < bbLower)
+    strategy.entry("Long", strategy.long)
+
+// Sell when price touches upper band
+if (close > bbUpper)
+    strategy.close("Long")

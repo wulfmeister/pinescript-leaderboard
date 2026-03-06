@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0a0a0a;
+  --fg: #ededed;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+/* Code blocks */
+pre, code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.card {
+  @apply bg-zinc-900 border border-zinc-800 rounded-lg p-6;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors duration-150;
+}
+
+.btn-primary {
+  @apply bg-brand-600 hover:bg-brand-700 text-white;
+}
+
+.btn-ghost {
+  @apply bg-zinc-800 hover:bg-zinc-700 text-zinc-200;
+}
+
+textarea, input, select {
+  @apply bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-zinc-100
+         placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-500
+         focus:border-transparent;
+}

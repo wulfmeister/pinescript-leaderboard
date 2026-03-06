@@ -1,0 +1,27 @@
+{
+  "name": "@pinescript-utils/monte-carlo",
+  "version": "1.0.0",
+  "description": "Monte Carlo simulation for backtesting robustness analysis",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../core"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}

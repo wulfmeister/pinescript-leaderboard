@@ -37,7 +37,9 @@ async function runPortfolioBacktest(
   }
 
   await runButton.click();
-  await expect(page.locator("text=Portfolio Equity")).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Portfolio Equity", exact: true }),
+  ).toBeVisible({
     timeout: 30000,
   });
 }

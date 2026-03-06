@@ -1,0 +1,36 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"],
+  "references": [
+    {
+      "path": "../packages/core"
+    },
+    {
+      "path": "../packages/data-feed"
+    },
+    {
+      "path": "../packages/pine-runtime"
+    },
+    {
+      "path": "../packages/backtester"
+    },
+    {
+      "path": "../packages/reporter"
+    },
+    {
+      "path": "../packages/ranker"
+    },
+    {
+      "path": "../packages/optimizer"
+    },
+    {
+      "path": "../packages/walk-forward"
+    }
+  ]
+}

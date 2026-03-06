@@ -1,0 +1,43 @@
+{
+  "name": "@pinescript-utils/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ../scripts/find-port.mjs | xargs -I{} next dev --port {}",
+    "build": "next build",
+    "start": "next start",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@pinescript-utils/backtester": "file:../packages/backtester",
+    "@pinescript-utils/core": "file:../packages/core",
+    "@pinescript-utils/data-feed": "file:../packages/data-feed",
+    "@pinescript-utils/llm-arena": "file:../packages/llm-arena",
+    "@pinescript-utils/monte-carlo": "file:../packages/monte-carlo",
+    "@pinescript-utils/optimizer": "file:../packages/optimizer",
+    "@pinescript-utils/portfolio": "file:../packages/portfolio",
+    "@pinescript-utils/pine-exporter": "file:../packages/pine-exporter",
+    "@pinescript-utils/pine-runtime": "file:../packages/pine-runtime",
+    "@pinescript-utils/ranker": "file:../packages/ranker",
+    "@pinescript-utils/reporter": "file:../packages/reporter",
+    "@pinescript-utils/risk-manager": "file:../packages/risk-manager",
+    "@pinescript-utils/venice": "file:../packages/venice",
+    "@pinescript-utils/walk-forward": "file:../packages/walk-forward",
+    "chart.js": "^4.5.1",
+    "chartjs-plugin-zoom": "^2.2.0",
+    "hammerjs": "^2.0.8",
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.2"
+  }
+}

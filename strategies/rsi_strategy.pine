@@ -1,0 +1,17 @@
+//@version=5
+strategy("RSI Overbought/Oversold", overlay=false)
+
+// Parameters
+rsiPeriod = input(14, title="RSI Period")
+overbought = input(70, title="Overbought Level")
+oversold = input(30, title="Oversold Level")
+
+// Calculate RSI
+rsiVal = ta.rsi(close, rsiPeriod)
+
+// Buy when RSI crosses below oversold, sell when RSI crosses above overbought
+if (rsiVal < oversold)
+    strategy.entry("Long", strategy.long)
+
+if (rsiVal > overbought)
+    strategy.close("Long")

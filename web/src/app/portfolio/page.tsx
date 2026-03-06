@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   getDefaultDataSettings,
   DataSettings,
+  formatDataSourceBadge,
   type DataSettingsValue,
 } from "../components/data-settings";
 import { PortfolioSummaryCards } from "./components/PortfolioSummaryCards";
@@ -172,6 +173,27 @@ export default function PortfolioPage() {
 
       {result && (
         <div className="mt-6 space-y-6">
+          <div className="flex items-center gap-2 text-xs">
+            <span
+              className={`px-2 py-1 rounded ${
+                dataSettings.useMock
+                  ? "bg-yellow-900/30 text-yellow-400 border border-yellow-700"
+                  : "bg-blue-900/30 text-blue-400 border border-blue-700"
+              }`}
+            >
+              {dataSettings.useMock ? "MOCK DATA" : "YAHOO FINANCE"}
+            </span>
+            <span className="text-zinc-500">
+              {formatDataSourceBadge(
+                dataSettings,
+                assets
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
+                  .join(", "),
+              )}
+            </span>
+          </div>
           {result.warnings && result.warnings.length > 0 && (
             <div className="card border-yellow-700 bg-yellow-950/30">
               <p className="text-yellow-400 text-sm">

@@ -99,7 +99,7 @@ test.describe("Optimize page", () => {
     await page.waitForLoadState("networkidle");
 
     await expect(page.locator("textarea")).toBeVisible();
-    await expect(page.locator("select")).toBeVisible();
+    await expect(page.locator("select").first()).toBeVisible();
 
     const runBtn = page.locator("button", { hasText: /run optimization/i });
     await expect(runBtn).toBeVisible();
@@ -165,7 +165,7 @@ test.describe("Arena page", () => {
     await page.locator("button", { hasText: /Tournament/i }).click();
 
     // Should show model checkboxes
-    await expect(page.locator("text=deepseek-r1-671b")).toBeVisible();
+    await expect(page.locator("text=zai-org-glm-4.7")).toBeVisible();
 
     await page.screenshot({
       path: "e2e/screenshots/arena-tournament.png",

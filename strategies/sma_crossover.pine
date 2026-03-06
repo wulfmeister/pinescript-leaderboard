@@ -1,0 +1,21 @@
+//@version=5
+strategy("SMA Crossover", overlay=true)
+
+// Input parameters
+fastLength = input(10, title="Fast SMA Length")
+slowLength = input(30, title="Slow SMA Length")
+
+// Calculate indicators
+fastSMA = ta.sma(close, fastLength)
+slowSMA = ta.sma(close, slowLength)
+
+// Plot indicators
+plot(fastSMA, color=red, title="Fast SMA")
+plot(slowSMA, color=blue, title="Slow SMA")
+
+// Trading logic
+if (ta.crossover(fastSMA, slowSMA))
+    strategy.entry("Long", strategy.long)
+
+if (ta.crossunder(fastSMA, slowSMA))
+    strategy.close("Long")

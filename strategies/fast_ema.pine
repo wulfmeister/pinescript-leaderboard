@@ -1,0 +1,14 @@
+//@version=5
+strategy("Fast EMA Crossover", overlay=true)
+
+fastEMA = ta.ema(close, 5)
+slowEMA = ta.ema(close, 20)
+
+plot(fastEMA, color=red, title="Fast EMA")
+plot(slowEMA, color=blue, title="Slow EMA")
+
+if (fastEMA > slowEMA)
+    strategy.entry("Long", strategy.long)
+
+if (fastEMA < slowEMA)
+    strategy.close("Long")

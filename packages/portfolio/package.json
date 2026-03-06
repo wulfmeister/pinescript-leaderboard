@@ -1,0 +1,29 @@
+{
+  "name": "@pinescript-utils/portfolio",
+  "version": "1.0.0",
+  "description": "Multi-asset portfolio backtesting engine for PineScript strategies",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../core",
+    "@pinescript-utils/pine-runtime": "file:../pine-runtime",
+    "@pinescript-utils/backtester": "file:../backtester"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}

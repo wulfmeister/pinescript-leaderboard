@@ -1,0 +1,30 @@
+{
+  "name": "@pinescript-utils/walk-forward",
+  "version": "1.0.0",
+  "description": "Walk-forward analysis for PineScript strategy optimization",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../core",
+    "@pinescript-utils/pine-runtime": "file:../pine-runtime",
+    "@pinescript-utils/backtester": "file:../backtester",
+    "@pinescript-utils/optimizer": "file:../optimizer"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}

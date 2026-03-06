@@ -1,0 +1,26 @@
+{
+  "name": "@pinescript-utils/venice",
+  "version": "1.0.0",
+  "description": "Venice AI LLM integration for PineScript Utils",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../core"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}

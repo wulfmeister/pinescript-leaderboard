@@ -1,0 +1,33 @@
+{
+  "name": "@pinescript-utils/cli",
+  "version": "1.0.0",
+  "description": "CLI for PineScript Utils",
+  "type": "module",
+  "bin": {
+    "pinescript-utils": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../packages/core",
+    "@pinescript-utils/data-feed": "file:../packages/data-feed",
+    "@pinescript-utils/pine-runtime": "file:../packages/pine-runtime",
+    "@pinescript-utils/backtester": "file:../packages/backtester",
+    "@pinescript-utils/reporter": "file:../packages/reporter",
+    "@pinescript-utils/ranker": "file:../packages/ranker",
+    "@pinescript-utils/optimizer": "file:../packages/optimizer",
+    "@pinescript-utils/walk-forward": "file:../packages/walk-forward",
+    "@pinescript-utils/risk-manager": "file:../packages/risk-manager",
+    "@pinescript-utils/monte-carlo": "file:../packages/monte-carlo",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2"
+  }
+}

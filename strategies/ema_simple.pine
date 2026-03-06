@@ -1,0 +1,21 @@
+//@version=5
+strategy("EMA Crossover Simple", overlay=true)
+
+// Input parameters
+fastLength = input(10, title="Fast EMA Length")
+slowLength = input(30, title="Slow EMA Length")
+
+// Calculate indicators
+fastEMA = ta.ema(close, fastLength)
+slowEMA = ta.ema(close, slowLength)
+
+// Plot indicators
+plot(fastEMA, color=red, title="Fast EMA")
+plot(slowEMA, color=blue, title="Slow EMA")
+
+// Trading logic - simple comparison
+if (fastEMA > slowEMA)
+    strategy.entry("Long", strategy.long)
+
+if (fastEMA < slowEMA)
+    strategy.close("Long")
