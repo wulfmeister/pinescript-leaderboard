@@ -64,7 +64,6 @@ export function DrawdownChart({ equityCurve }: Props) {
       responsive: true,
       animation: false,
       interaction: { mode: "index", intersect: false },
-      interaction: { mode: "index", intersect: false },
       plugins: {
         legend: { display: false },
         tooltip: {

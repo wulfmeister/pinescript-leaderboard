@@ -3,6 +3,7 @@ import { test, expect } from "@playwright/test";
 const PAGES = [
   { path: "/", name: "dashboard" },
   { path: "/backtest", name: "backtest" },
+  { path: "/compare", name: "compare" },
   { path: "/rank", name: "rank" },
   { path: "/optimize", name: "optimize" },
   { path: "/walk-forward", name: "walk-forward" },
@@ -36,7 +37,7 @@ test.describe("Dashboard", () => {
 
     // Should have navigation links
     const navLinks = page.locator("nav a");
-    await expect(navLinks).toHaveCount(9); // logo + 8 nav items
+    await expect(navLinks).toHaveCount(10); // logo + 9 nav items
 
     // Should have main heading
     await expect(page.locator("h1")).toContainText("PineScript Utils");
@@ -206,10 +207,68 @@ test.describe("Export page", () => {
   });
 });
 
+test.describe("Compare page", () => {
+  test("has two editors and compare button", async ({ page }) => {
+    await page.goto("/compare");
+    await page.waitForLoadState("networkidle");
+
+    const textareas = page.locator("textarea");
+    await expect(textareas).toHaveCount(2);
+
+    await expect(page.locator("h1")).toContainText("Compare");
+
+    const compareBtn = page.locator("button", {
+      hasText: /compare strategies/i,
+    });
+    await expect(compareBtn).toBeVisible();
+  });
+
+  test("runs compare with mock data", async ({ page }) => {
+    await page.goto("/compare");
+    await page.waitForLoadState("networkidle");
+
+    const mockCheckbox = page.locator('input[type="checkbox"]');
+    if (!(await mockCheckbox.isChecked())) {
+      await mockCheckbox.check();
+    }
+
+    const compareBtn = page.locator("button", {
+      hasText: /compare strategies/i,
+    });
+    await compareBtn.click();
+
+    await page.waitForSelector("text=/Total Return/i", { timeout: 15000 });
+
+    await expect(page.locator("text=/Strategy A/i").first()).toBeVisible();
+    await expect(page.locator("text=/Strategy B/i").first()).toBeVisible();
+
+    await page.screenshot({
+      path: "e2e/screenshots/compare-results.png",
+      fullPage: true,
+    });
+  });
+
+  test("shows validation error for empty editor", async ({ page }) => {
+    await page.goto("/compare");
+    await page.waitForLoadState("networkidle");
+
+    const textareas = page.locator("textarea");
+    await textareas.nth(0).fill("");
+
+    const compareBtn = page.locator("button", {
+      hasText: /compare strategies/i,
+    });
+    await compareBtn.click();
+
+    await expect(page.locator("text=/cannot be empty/i")).toBeVisible();
+  });
+});
+
 test.describe("Navigation", () => {
   test("all nav links work", async ({ page }) => {
     const navLinks = [
       { text: "Backtest", url: "/backtest" },
+      { text: "Compare", url: "/compare" },
       { text: "Rank", url: "/rank" },
       { text: "Optimize", url: "/optimize" },
       { text: "Walk-Forward", url: "/walk-forward" },
