@@ -37,7 +37,7 @@ Do not include or depend on `.sisyphus/` internals for implementation decisions.
 - Language: TypeScript (ES modules).
 - Monorepo/build: Turborepo + npm workspaces.
 - Web: Next.js 14 (App Router), React 18, Tailwind CSS.
-- Charts: `chart.js`, `react-chartjs-2`, `chartjs-plugin-zoom`, `hammerjs`.
+- Charts: `lightweight-charts` (TradingView Lightweight Charts v5).
 - Unit tests: Vitest.
 - E2E tests: Playwright.
 - Pine runtime engine: PineTS/OpenPineScript (`pinets`).
@@ -145,8 +145,8 @@ API routes under `web/src/app/api/*/route.ts`:
 
 Chart conventions:
 
-- Chart.js zoom/pan pattern is implemented in equity chart components by lazy-registering `chartjs-plugin-zoom` and exposing a `Reset Zoom` button.
-- This is used in both backtest and portfolio equity views.
+- Lightweight Charts (TradingView) for all charting. Zoom/pan is built-in (no plugin). Charts use `createChart()` with `autoSize: true` and dark theme defaults. Tooltip via `subscribeCrosshairMove()`. Shared `useLightweightChart` hook in `web/src/app/hooks/useLightweightChart.ts` for React components. HTML reporter uses standalone CDN build.
+- Reset Zoom button resets both time scale (`chart.timeScale().resetTimeScale()`) and price scale (`chart.priceScale('right').applyOptions({ autoScale: true })`).
 
 ## CLI architecture (`cli/`)
 

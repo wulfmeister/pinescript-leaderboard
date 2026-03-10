@@ -1,101 +1,63 @@
 "use client";
 
-import { useMemo } from "react";
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Filler,
-  type ChartData,
-  type ChartOptions,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { AreaSeries } from "lightweight-charts";
 import { type EquityPoint } from "../types";
-
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Filler,
-);
+import {
+  useLightweightChart,
+  useChartTooltip,
+  toUTCTimestamp,
+} from "../../hooks/useLightweightChart";
 
 interface Props {
   equityCurve: EquityPoint[];
 }
 
 export function DrawdownChart({ equityCurve }: Props) {
-  const labels = useMemo(
-    () => equityCurve.map((p) => new Date(p.timestamp).toLocaleDateString()),
-    [equityCurve],
-  );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useLightweightChart(containerRef);
 
   const drawdownData = useMemo(
-    () => equityCurve.map((p) => -(p.drawdown * 100)),
+    () =>
+      equityCurve.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.drawdown ?? 0,
+      })),
     [equityCurve],
   );
 
-  const data: ChartData<"line"> = useMemo(
-    () => ({
-      labels,
-      datasets: [
-        {
-          label: "Drawdown %",
-          data: drawdownData,
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0.15)",
-          borderWidth: 1,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          fill: true,
-          tension: 0.1,
-        },
-      ],
-    }),
-    [labels, drawdownData],
-  );
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
 
-  const options: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      animation: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: "#18181b",
-          titleColor: "#a1a1aa",
-          bodyColor: "#e4e4e7",
-          callbacks: {
-            label: (ctx) => ` ${Number(ctx.raw).toFixed(2)}%`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: "#71717a", maxTicksLimit: 8, maxRotation: 0 },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-        y: {
-          ticks: {
-            color: "#71717a",
-            callback: (v) => `${Number(v).toFixed(1)}%`,
-          },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-      },
-    }),
+    const series = chart.addSeries(AreaSeries, {
+      topColor: "rgba(239,68,68,0.1)",
+      bottomColor: "rgba(239,68,68,0.4)",
+      lineColor: "#ef4444",
+      lineWidth: 2,
+    });
+
+    series.setData(drawdownData);
+    chart.timeScale().fitContent();
+
+    return () => {
+      chart.removeSeries(series);
+    };
+  }, [chartRef, drawdownData]);
+
+  const formatTooltip = useCallback(
+    (val: number) => `${(val * 100).toFixed(2)}%`,
     [],
   );
+
+  useChartTooltip(chartRef, containerRef, formatTooltip);
 
   return (
     <div className="card">
       <h2 className="font-semibold text-white mb-4">Drawdown</h2>
-      <Line data={data} options={options} />
+      <div style={{ position: "relative" }}>
+        <div ref={containerRef} className="h-[400px] w-full" />
+      </div>
     </div>
   );
 }

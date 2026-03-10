@@ -37,7 +37,7 @@ export const DEFAULT_REPORT_OPTIONS: ReportOptions = {
 export function generateHTMLReport(
   result: BacktestResult,
   data: OHLCV[],
-  options: Partial<ReportOptions> = {}
+  options: Partial<ReportOptions> = {},
 ): string {
   const opts = { ...DEFAULT_REPORT_OPTIONS, ...options };
 
@@ -47,7 +47,8 @@ export function generateHTMLReport(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${opts.title}</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CDN version must match web/package.json lightweight-charts version (currently ^5.1.0) -->
+    <script src="https://unpkg.com/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js"></script>
     <style>
         * {
             margin: 0;
@@ -229,7 +230,7 @@ export function generateHTMLReport(
         </div>
     </div>
 
-    ${opts.includeCharts ? generateChartScripts(result) : ""}
+    ${opts.includeCharts ? generateChartScripts(result, opts.theme) : ""}
 </body>
 </html>`;
 }
@@ -241,18 +242,54 @@ function generateMetricCards(result: BacktestResult, theme: string): string {
     `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const cards = [
-    { label: "Total Return", value: formatPercent(metrics.totalReturn), positive: metrics.totalReturn >= 0 },
-    { label: "Annualized Return", value: formatPercent(metrics.annualizedReturn), positive: metrics.annualizedReturn >= 0 },
+    {
+      label: "Total Return",
+      value: formatPercent(metrics.totalReturn),
+      positive: metrics.totalReturn >= 0,
+    },
+    {
+      label: "Annualized Return",
+      value: formatPercent(metrics.annualizedReturn),
+      positive: metrics.annualizedReturn >= 0,
+    },
     { label: "Total Trades", value: metrics.totalTrades.toString() },
-    { label: "Win Rate", value: formatPercent(metrics.winRate), positive: metrics.winRate >= 0.5 },
-    { label: "Profit Factor", value: metrics.profitFactor.toFixed(2), positive: metrics.profitFactor >= 1 },
-    { label: "Sharpe Ratio", value: metrics.sharpeRatio.toFixed(2), positive: metrics.sharpeRatio >= 1 },
-    { label: "Sortino Ratio", value: metrics.sortinoRatio.toFixed(2), positive: metrics.sortinoRatio >= 1 },
-    { label: "Max Drawdown", value: formatPercent(metrics.maxDrawdown), positive: false },
+    {
+      label: "Win Rate",
+      value: formatPercent(metrics.winRate),
+      positive: metrics.winRate >= 0.5,
+    },
+    {
+      label: "Profit Factor",
+      value: metrics.profitFactor.toFixed(2),
+      positive: metrics.profitFactor >= 1,
+    },
+    {
+      label: "Sharpe Ratio",
+      value: metrics.sharpeRatio.toFixed(2),
+      positive: metrics.sharpeRatio >= 1,
+    },
+    {
+      label: "Sortino Ratio",
+      value: metrics.sortinoRatio.toFixed(2),
+      positive: metrics.sortinoRatio >= 1,
+    },
+    {
+      label: "Max Drawdown",
+      value: formatPercent(metrics.maxDrawdown),
+      positive: false,
+    },
     { label: "Volatility", value: formatPercent(metrics.volatility) },
     { label: "Initial Capital", value: formatCurrency(result.initialCapital) },
-    { label: "Final Capital", value: formatCurrency(result.finalCapital), positive: result.finalCapital >= result.initialCapital },
-    { label: "Expectancy", value: formatCurrency(metrics.expectancy), positive: metrics.expectancy >= 0 },
+    {
+      label: "Final Capital",
+      value: formatCurrency(result.finalCapital),
+      positive: result.finalCapital >= result.initialCapital,
+    },
+    {
+      label: "Expectancy",
+      value: formatCurrency(metrics.expectancy),
+      positive: metrics.expectancy >= 0,
+    },
   ];
 
   return cards
@@ -261,7 +298,7 @@ function generateMetricCards(result: BacktestResult, theme: string): string {
     <div class="metric-card">
         <div class="metric-label">${card.label}</div>
         <div class="metric-value ${card.positive ? "positive" : card.positive === false ? "negative" : ""}">${card.value}</div>
-    </div>`
+    </div>`,
     )
     .join("");
 }
@@ -272,7 +309,7 @@ function generateChartsSection(result: BacktestResult, theme: string): string {
             <div class="chart-container">
                 <h2>Equity Curve</h2>
                 <div class="chart-wrapper">
-                    <canvas id="equityChart"></canvas>
+                    <div id="equityChart" style="height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -281,7 +318,7 @@ function generateChartsSection(result: BacktestResult, theme: string): string {
             <div class="chart-container">
                 <h2>Drawdown</h2>
                 <div class="chart-wrapper">
-                    <canvas id="drawdownChart"></canvas>
+                    <div id="drawdownChart" style="height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -290,13 +327,16 @@ function generateChartsSection(result: BacktestResult, theme: string): string {
             <div class="chart-container">
                 <h2>Monthly Returns</h2>
                 <div class="chart-wrapper">
-                    <canvas id="monthlyReturnsChart"></canvas>
+                    <div id="monthlyReturnsChart" style="height: 400px;"></div>
                 </div>
             </div>
         </div>`;
 }
 
-function generateTradeListSection(result: BacktestResult, theme: string): string {
+function generateTradeListSection(
+  result: BacktestResult,
+  theme: string,
+): string {
   const closingTrades = result.trades.filter((t) => t.pnl !== undefined);
 
   if (closingTrades.length === 0) {
@@ -319,7 +359,7 @@ function generateTradeListSection(result: BacktestResult, theme: string): string
             <td>$${trade.price.toFixed(2)}</td>
             <td>${trade.quantity.toFixed(4)}</td>
             <td class="${(trade.pnl || 0) >= 0 ? "positive" : "negative"}">${trade.pnl !== undefined ? "$" + trade.pnl.toFixed(2) : "-"}</td>
-        </tr>`
+        </tr>`,
     )
     .join("");
 
@@ -346,185 +386,104 @@ function generateTradeListSection(result: BacktestResult, theme: string): string
         </div>`;
 }
 
-function generateChartScripts(result: BacktestResult): string {
-  const equityData = result.equityCurve.map((e) => ({
-    x: new Date(e.timestamp).toISOString().split("T")[0],
-    y: e.equity,
-  }));
+function generateChartScripts(result: BacktestResult, theme: string): string {
+  // Deduplicate equity data by date (LW Charts requires strictly increasing time)
+  const equityByDate = new Map<string, number>();
+  for (const e of result.equityCurve) {
+    const date = new Date(e.timestamp).toISOString().split("T")[0];
+    equityByDate.set(date, e.equity);
+  }
+  const equityData = Array.from(equityByDate.entries()).map(
+    ([time, value]) => ({ time, value }),
+  );
 
-  const drawdownData = result.equityCurve.map((e) => ({
-    x: new Date(e.timestamp).toISOString().split("T")[0],
-    y: e.drawdown * 100,
-  }));
+  const drawdownByDate = new Map<string, number>();
+  for (const e of result.equityCurve) {
+    const date = new Date(e.timestamp).toISOString().split("T")[0];
+    drawdownByDate.set(date, e.drawdown * 100);
+  }
+  const drawdownData = Array.from(drawdownByDate.entries()).map(
+    ([time, value]) => ({ time, value }),
+  );
 
-  // Calculate monthly returns
   const monthlyReturns = calculateMonthlyReturns(result.equityCurve);
+  const monthlyData = monthlyReturns.map((r) => ({
+    time: r.month + "-01",
+    value: r.return * 100,
+    color: r.return >= 0 ? "#27ae60" : "#e74c3c",
+  }));
+
+  const bgColor = theme === "dark" ? "#18181b" : "#ffffff";
+  const textColor = theme === "dark" ? "#a1a1aa" : "#2c3e50";
+  const gridColor = theme === "dark" ? "rgba(63,63,70,0.4)" : "rgba(0,0,0,0.1)";
 
   return `
     <script>
-        // Equity Curve Chart
-        const equityCtx = document.getElementById('equityChart').getContext('2d');
-        new Chart(equityCtx, {
-            type: 'line',
-            data: {
-                labels: ${JSON.stringify(equityData.map((d) => d.x))},
-                datasets: [{
-                    label: 'Portfolio Value',
-                    data: ${JSON.stringify(equityData.map((d) => d.y))},
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return '$' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    },
-                    y: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Portfolio Value ($)'
-                        }
-                    }
-                }
-            }
-        });
+        const chartLayout = {
+            background: { type: LightweightCharts.ColorType.Solid, color: '${bgColor}' },
+            textColor: '${textColor}',
+        };
+        const chartGrid = {
+            vertLines: { color: '${gridColor}' },
+            horzLines: { color: '${gridColor}' },
+        };
 
-        // Drawdown Chart
-        const drawdownCtx = document.getElementById('drawdownChart').getContext('2d');
-        new Chart(drawdownCtx, {
-            type: 'line',
-            data: {
-                labels: ${JSON.stringify(drawdownData.map((d) => d.x))},
-                datasets: [{
-                    label: 'Drawdown %',
-                    data: ${JSON.stringify(drawdownData.map((d) => d.y))},
-                    borderColor: '#e74c3c',
-                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.parsed.y.toFixed(2) + '%';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Date'
-                        }
-                    },
-                    y: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Drawdown (%)'
-                        },
-                        reverse: true
-                    }
-                }
-            }
+        const equityChart = LightweightCharts.createChart(document.getElementById('equityChart'), {
+            height: 400,
+            layout: chartLayout,
+            grid: chartGrid,
+            timeScale: { borderColor: '${gridColor}' },
+            rightPriceScale: { borderColor: '${gridColor}' },
         });
+        const equitySeries = equityChart.addSeries(LightweightCharts.LineSeries, {
+            color: '#3498db',
+            lineWidth: 2,
+        });
+        equitySeries.setData(${JSON.stringify(equityData)});
+        equityChart.timeScale().fitContent();
 
-        // Monthly Returns Chart
-        const monthlyCtx = document.getElementById('monthlyReturnsChart').getContext('2d');
-        new Chart(monthlyCtx, {
-            type: 'bar',
-            data: {
-                labels: ${JSON.stringify(monthlyReturns.map((r) => r.month))},
-                datasets: [{
-                    label: 'Monthly Return %',
-                    data: ${JSON.stringify(monthlyReturns.map((r) => r.return * 100))},
-                    backgroundColor: ${JSON.stringify(monthlyReturns.map((r) => r.return >= 0 ? 'rgba(39, 174, 96, 0.7)' : 'rgba(231, 76, 60, 0.7)'))},
-                    borderColor: ${JSON.stringify(monthlyReturns.map((r) => r.return >= 0 ? '#27ae60' : '#e74c3c'))},
-                    borderWidth: 1
-                }]
+        const drawdownChart = LightweightCharts.createChart(document.getElementById('drawdownChart'), {
+            height: 400,
+            layout: chartLayout,
+            grid: chartGrid,
+            timeScale: { borderColor: '${gridColor}' },
+            rightPriceScale: {
+                borderColor: '${gridColor}',
+                invertScale: true,
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.parsed.y.toFixed(2) + '%';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Month'
-                        }
-                    },
-                    y: {
-                        display: true,
-                        title: {
-                            display: true,
-                            text: 'Return (%)'
-                        }
-                    }
-                }
-            }
         });
+        const drawdownSeries = drawdownChart.addSeries(LightweightCharts.AreaSeries, {
+            topColor: 'rgba(231, 76, 60, 0.1)',
+            bottomColor: 'rgba(231, 76, 60, 0.4)',
+            lineColor: '#e74c3c',
+            lineWidth: 2,
+        });
+        drawdownSeries.setData(${JSON.stringify(drawdownData)});
+        drawdownChart.timeScale().fitContent();
+
+        const monthlyChart = LightweightCharts.createChart(document.getElementById('monthlyReturnsChart'), {
+            height: 400,
+            layout: chartLayout,
+            grid: chartGrid,
+            timeScale: { borderColor: '${gridColor}' },
+            rightPriceScale: { borderColor: '${gridColor}' },
+        });
+        const monthlySeries = monthlyChart.addSeries(LightweightCharts.HistogramSeries, {});
+        monthlySeries.setData(${JSON.stringify(monthlyData)});
+        monthlyChart.timeScale().fitContent();
     </script>`;
 }
 
 function generateSummarySection(result: BacktestResult, theme: string): string {
   const m = result.metrics;
-  const trades = result.trades.filter(t => t.pnl !== undefined);
-  
+  const trades = result.trades.filter((t) => t.pnl !== undefined);
+
   // Win/Loss streak analysis
   let maxWinStreak = 0;
   let maxLossStreak = 0;
   let currentWinStreak = 0;
   let currentLossStreak = 0;
-  
+
   for (const trade of trades) {
     if ((trade.pnl || 0) > 0) {
       currentWinStreak++;
@@ -539,7 +498,7 @@ function generateSummarySection(result: BacktestResult, theme: string): string {
 
   // Risk/Reward ratio
   const riskReward = m.averageLoss > 0 ? m.averageWin / m.averageLoss : 0;
-  
+
   // Recovery factor: totalReturn / maxDrawdown
   const recoveryFactor = m.maxDrawdown > 0 ? m.totalReturn / m.maxDrawdown : 0;
 
@@ -578,7 +537,7 @@ function generateSummarySection(result: BacktestResult, theme: string): string {
                     </div>
                     <div>
                         <div style="font-size: 0.85em; color: ${mutedColor}; text-transform: uppercase;">Expectancy</div>
-                        <div style="font-size: 1.4em; font-weight: 600; color: ${m.expectancy >= 0 ? '#27ae60' : '#e74c3c'};">$${m.expectancy.toFixed(2)}</div>
+                        <div style="font-size: 1.4em; font-weight: 600; color: ${m.expectancy >= 0 ? "#27ae60" : "#e74c3c"};">$${m.expectancy.toFixed(2)}</div>
                     </div>
                     <div>
                         <div style="font-size: 0.85em; color: ${mutedColor}; text-transform: uppercase;">Volatility</div>
@@ -590,7 +549,7 @@ function generateSummarySection(result: BacktestResult, theme: string): string {
 }
 
 function calculateMonthlyReturns(
-  equityCurve: { timestamp: number; equity: number; drawdown: number }[]
+  equityCurve: { timestamp: number; equity: number; drawdown: number }[],
 ): { month: string; return: number }[] {
   if (equityCurve.length < 2) return [];
 
@@ -624,7 +583,7 @@ export async function saveHTMLReport(
   result: BacktestResult,
   data: OHLCV[],
   outputPath: string,
-  options: Partial<ReportOptions> = {}
+  options: Partial<ReportOptions> = {},
 ): Promise<void> {
   const fs = await import("fs");
   const html = generateHTMLReport(result, data, options);

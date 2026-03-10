@@ -1,30 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
+import { LineSeries, type ISeriesApi } from "lightweight-charts";
+
 import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler,
-  type ChartData,
-  type ChartOptions,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  useLightweightChart,
+  useChartTooltip,
+  toUTCTimestamp,
+} from "../../hooks/useLightweightChart";
 
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler,
-);
-
+// Minimal EquityPoint for portfolio data (no drawdown field).
+// Intentionally differs from backtest/types.ts EquityPoint which includes drawdown.
 interface EquityPoint {
   timestamp: number;
   equity: number;
@@ -42,16 +28,16 @@ interface Props {
 }
 
 const ASSET_COLORS = [
-  "#60a5fa",
+  "#3b82f6",
   "#f59e0b",
-  "#a78bfa",
-  "#f87171",
-  "#34d399",
-  "#fb923c",
+  "#ef4444",
+  "#8b5cf6",
+  "#06b6d4",
+  "#84cc16",
+  "#f43f5e",
+  "#14b8a6",
   "#e879f9",
-  "#38bdf8",
-  "#4ade80",
-  "#fbbf24",
+  "#fb923c",
 ];
 
 export function PortfolioEquityChart({
@@ -59,114 +45,138 @@ export function PortfolioEquityChart({
   perAsset,
   initialCapital,
 }: Props) {
-  const chartRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useLightweightChart(containerRef);
+  const combinedSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const assetSeriesRefs = useRef<ISeriesApi<"Line">[]>([]);
 
-  useEffect(() => {
-    import("chartjs-plugin-zoom").then((mod) => {
-      Chart.register(mod.default);
-    });
-  }, []);
+  const formatValue = useCallback(
+    (val: number) =>
+      `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    [],
+  );
 
-  const labels = useMemo(
-    () => combined.map((p) => new Date(p.timestamp).toLocaleDateString()),
+  useChartTooltip(chartRef, containerRef, formatValue);
+
+
+  const combinedLineData = useMemo(
+    () =>
+      combined.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.equity,
+      })),
     [combined],
   );
 
-  const data: ChartData<"line"> = useMemo(() => {
-    const datasets: ChartData<"line">["datasets"] = [
-      {
-        label: "Portfolio",
-        data: combined.map((p) => p.equity),
-        borderColor: "#22c55e",
-        backgroundColor: "rgba(34,197,94,0.08)",
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        fill: true,
-        tension: 0.1,
-      },
-    ];
 
-    perAsset.forEach((asset, idx) => {
-      const color = ASSET_COLORS[idx % ASSET_COLORS.length];
-      datasets.push({
-        label: asset.symbol,
-        data: asset.equityCurve.map((p) => p.equity),
-        borderColor: color,
-        backgroundColor: "transparent",
-        borderWidth: 1,
-        borderDash: [4, 4],
-        pointRadius: 0,
-        pointHoverRadius: 3,
-        fill: false,
-        tension: 0.1,
-      });
-    });
-
-    return { labels, datasets };
-  }, [combined, perAsset, labels]);
-
-  const options: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      animation: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: {
-          display: true,
-          labels: { color: "#a1a1aa", boxWidth: 12 },
-        },
-        tooltip: {
-          backgroundColor: "#18181b",
-          titleColor: "#a1a1aa",
-          bodyColor: "#e4e4e7",
-          callbacks: {
-            label: (ctx) =>
-              ` ${ctx.dataset.label}: $${Number(ctx.raw).toFixed(2)}`,
-          },
-        },
-        zoom: {
-          pan: { enabled: true, mode: "x" },
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: "x",
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: {
-            color: "#71717a",
-            maxTicksLimit: 8,
-            maxRotation: 0,
-          },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-        y: {
-          ticks: {
-            color: "#71717a",
-            callback: (v) => `$${Number(v).toLocaleString()}`,
-          },
-          suggestedMin: initialCapital * 0.9,
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-      },
-    }),
-    [initialCapital],
+  const assetLineData = useMemo(
+    () =>
+      perAsset.map((asset) => ({
+        symbol: asset.symbol,
+        data: asset.equityCurve.map((p) => ({
+          time: toUTCTimestamp(p.timestamp),
+          value: p.equity,
+        })),
+      })),
+    [perAsset],
   );
+
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || combinedLineData.length === 0) return;
+
+
+    const combinedSeries = chart.addSeries(LineSeries, {
+      color: "#22c55e",
+      lineWidth: 2,
+      priceLineVisible: false,
+    });
+    combinedSeries.setData(combinedLineData);
+    combinedSeriesRef.current = combinedSeries;
+
+
+    const assetSeries: ISeriesApi<"Line">[] = [];
+    assetLineData.forEach((asset, idx) => {
+      const series = chart.addSeries(LineSeries, {
+        color: ASSET_COLORS[idx % ASSET_COLORS.length],
+        lineWidth: 1,
+        priceLineVisible: false,
+      });
+      series.setData(asset.data);
+      assetSeries.push(series);
+    });
+    assetSeriesRefs.current = assetSeries;
+
+
+    chart.timeScale().fitContent();
+
+
+    return () => {
+      if (chartRef.current) {
+        try {
+          if (combinedSeriesRef.current) {
+            chartRef.current.removeSeries(combinedSeriesRef.current);
+            combinedSeriesRef.current = null;
+          }
+          assetSeriesRefs.current.forEach((s) => {
+            try {
+              chartRef.current?.removeSeries(s);
+            } catch (e) {
+              if (process.env.NODE_ENV !== "production") {
+                console.warn("PortfolioEquityChart per-asset series cleanup:", e);
+              }
+            }
+          });
+          assetSeriesRefs.current = [];
+        } catch (e) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("PortfolioEquityChart series cleanup error:", e);
+          }
+        }
+      }
+    };
+  }, [chartRef, combinedLineData, assetLineData]);
+
+  const handleResetZoom = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().resetTimeScale();
+      chartRef.current.priceScale("right").applyOptions({ autoScale: true });
+    }
+  }, [chartRef]);
 
   return (
     <>
-      <div className="flex justify-end mb-2">
-        <button
-          onClick={() => chartRef.current?.resetZoom()}
-          className="btn btn-ghost text-xs"
-        >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-3 text-xs flex-wrap">
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block w-3 h-0.5"
+              style={{ backgroundColor: "#22c55e" }}
+            />
+            <span className="text-zinc-400">Portfolio</span>
+          </span>
+          {perAsset.map((asset, idx) => (
+            <span key={asset.symbol} className="flex items-center gap-1">
+              <span
+                className="inline-block w-3 h-0.5"
+                style={{
+                  backgroundColor: ASSET_COLORS[idx % ASSET_COLORS.length],
+                }}
+              />
+              <span className="text-zinc-400">{asset.symbol}</span>
+            </span>
+          ))}
+        </div>
+        <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
           Reset Zoom
         </button>
       </div>
-      <Line ref={chartRef} data={data} options={options} />
+      <div
+        ref={containerRef}
+        className="h-[400px] w-full"
+        style={{ position: "relative" }}
+      />
       <p className="text-xs text-zinc-600 mt-2">
         Scroll to zoom &middot; Drag to pan
       </p>

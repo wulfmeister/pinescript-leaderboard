@@ -1,35 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { LineSeries, AreaSeries } from "lightweight-charts";
 import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler,
-  type ChartData,
-  type ChartOptions,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
+  useLightweightChart,
+  toUTCTimestamp,
+} from "../hooks/useLightweightChart";
 import {
   DataSettings,
   getDefaultDataSettings,
   formatDataSourceBadge,
   type DataSettingsValue,
 } from "../components/data-settings";
-
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler,
-);
 
 const SAMPLE_STRATEGY_A = `//@version=5
 strategy("SMA Crossover", overlay=true)
@@ -122,13 +104,44 @@ export default function ComparePage() {
   const [results, setResults] = useState<CompareResult[] | null>(null);
   const [error, setError] = useState("");
 
-  const equityChartRef = useRef<any>(null);
+  const equityContainerRef = useRef<HTMLDivElement>(null);
+  const drawdownContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    import("chartjs-plugin-zoom").then((mod) => {
-      Chart.register(mod.default);
-    });
-  }, []);
+
+  const equityChartOptions = useMemo(
+    () => ({
+      localization: {
+        priceFormatter: (price: number) =>
+          "$" +
+          price.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
+      },
+    }),
+    [],
+  );
+
+  const drawdownChartOptions = useMemo(
+    () => ({
+      handleScroll: false,
+      handleScale: false,
+      localization: {
+        priceFormatter: (price: number) => `${price.toFixed(2)}%`,
+      },
+    }),
+    [],
+  );
+
+
+  const equityChartRef = useLightweightChart(
+    equityContainerRef,
+    equityChartOptions,
+  );
+  const drawdownChartRef = useLightweightChart(
+    drawdownContainerRef,
+    drawdownChartOptions,
+  );
 
   const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
   const usd = (v: number) =>
@@ -165,171 +178,106 @@ export default function ComparePage() {
         : "tie";
   };
 
-  // Equity chart data
-  const equityChartData: ChartData<"line"> | null = useMemo(() => {
-    if (!stratA || !stratB) return null;
-    const curveA = stratA.equityCurve;
-    const curveB = stratB.equityCurve;
-    const longer = curveA.length >= curveB.length ? curveA : curveB;
-    const labels = longer.map((p) =>
-      new Date(p.timestamp).toLocaleDateString(),
-    );
+
+  useEffect(() => {
+    const chart = equityChartRef.current;
+    if (!chart || !stratA || !stratB) return;
+
     const cap = parseFloat(capital) || 10000;
 
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Strategy A",
-          data: curveA.map((p) => p.equity),
-          borderColor: "#22c55e",
-          backgroundColor: "transparent",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: false,
-          tension: 0.1,
-        },
-        {
-          label: "Strategy B",
-          data: curveB.map((p) => p.equity),
-          borderColor: "#818cf8",
-          backgroundColor: "transparent",
-          borderWidth: 1.5,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          fill: false,
-          tension: 0.1,
-        },
-        {
-          label: "Initial Capital",
-          data: longer.map(() => cap),
-          borderColor: "#52525b",
-          backgroundColor: "transparent",
-          borderWidth: 1,
-          borderDash: [6, 4],
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          fill: false,
-        },
-      ],
-    };
-  }, [stratA, stratB, capital]);
-
-  const equityChartOptions: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      animation: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: true, labels: { color: "#a1a1aa", boxWidth: 12 } },
-        tooltip: {
-          backgroundColor: "#18181b",
-          titleColor: "#a1a1aa",
-          bodyColor: "#e4e4e7",
-          callbacks: {
-            label: (ctx) =>
-              ` ${ctx.dataset.label}: $${Number(ctx.raw).toFixed(2)}`,
-          },
-        },
-        zoom: {
-          pan: { enabled: true, mode: "x" as const },
-          zoom: {
-            wheel: { enabled: true },
-            pinch: { enabled: true },
-            mode: "x" as const,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: "#71717a", maxTicksLimit: 8, maxRotation: 0 },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-        y: {
-          ticks: {
-            color: "#71717a",
-            callback: (v) => `$${Number(v).toLocaleString()}`,
-          },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-      },
-    }),
-    [],
-  );
-
-  // Drawdown chart data
-  const drawdownChartData: ChartData<"line"> | null = useMemo(() => {
-    if (!stratA || !stratB) return null;
-    const curveA = stratA.equityCurve;
-    const curveB = stratB.equityCurve;
-    const longer = curveA.length >= curveB.length ? curveA : curveB;
-    const labels = longer.map((p) =>
-      new Date(p.timestamp).toLocaleDateString(),
+    // Strategy A line
+    const seriesA = chart.addSeries(LineSeries, {
+      color: "#22c55e",
+      lineWidth: 2,
+    });
+    seriesA.setData(
+      stratA.equityCurve.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.equity,
+      })),
     );
 
-    return {
-      labels,
-      datasets: [
-        {
-          label: "Strategy A",
-          data: curveA.map((p) => -(p.drawdown * 100)),
-          borderColor: "#ef4444",
-          backgroundColor: "rgba(239,68,68,0.15)",
-          borderWidth: 1,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          fill: true,
-          tension: 0.1,
-        },
-        {
-          label: "Strategy B",
-          data: curveB.map((p) => -(p.drawdown * 100)),
-          borderColor: "#f97316",
-          backgroundColor: "transparent",
-          borderWidth: 1,
-          pointRadius: 0,
-          pointHoverRadius: 3,
-          fill: false,
-          tension: 0.1,
-        },
-      ],
-    };
-  }, [stratA, stratB]);
+    // Initial Capital baseline (dashed zinc line)
+    seriesA.createPriceLine({
+      price: cap,
+      color: "#52525b",
+      lineStyle: 2, // Dashed
+      lineWidth: 1,
+      axisLabelVisible: false,
+    });
 
-  const drawdownChartOptions: ChartOptions<"line"> = useMemo(
-    () => ({
-      responsive: true,
-      animation: false,
-      interaction: { mode: "index", intersect: false },
-      plugins: {
-        legend: { display: true, labels: { color: "#a1a1aa", boxWidth: 12 } },
-        tooltip: {
-          backgroundColor: "#18181b",
-          titleColor: "#a1a1aa",
-          bodyColor: "#e4e4e7",
-          callbacks: {
-            label: (ctx) =>
-              ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(2)}%`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: "#71717a", maxTicksLimit: 8, maxRotation: 0 },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-        y: {
-          ticks: {
-            color: "#71717a",
-            callback: (v) => `${Number(v).toFixed(1)}%`,
-          },
-          grid: { color: "rgba(63,63,70,0.4)" },
-        },
-      },
-    }),
-    [],
-  );
+    // Strategy B line
+    const seriesB = chart.addSeries(LineSeries, {
+      color: "#3b82f6",
+      lineWidth: 2,
+    });
+    seriesB.setData(
+      stratB.equityCurve.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.equity,
+      })),
+    );
+
+    chart.timeScale().fitContent();
+
+    return () => {
+      try {
+        chart.removeSeries(seriesA);
+        chart.removeSeries(seriesB);
+      } catch (e) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Compare equity chart series cleanup:", e);
+        }
+      }
+    };
+  }, [equityChartRef, stratA, stratB, capital]);
+
+
+  useEffect(() => {
+    const chart = drawdownChartRef.current;
+    if (!chart || !stratA || !stratB) return;
+
+    // Strategy A drawdown
+    const ddA = chart.addSeries(AreaSeries, {
+      lineColor: "#ef4444",
+      topColor: "rgba(239,68,68,0.05)",
+      bottomColor: "rgba(239,68,68,0.2)",
+      lineWidth: 1,
+    });
+    ddA.setData(
+      stratA.equityCurve.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.drawdown ?? 0,
+      })),
+    );
+
+    // Strategy B drawdown
+    const ddB = chart.addSeries(AreaSeries, {
+      lineColor: "#f97316",
+      topColor: "rgba(249,115,22,0.05)",
+      bottomColor: "rgba(249,115,22,0.2)",
+      lineWidth: 1,
+    });
+    ddB.setData(
+      stratB.equityCurve.map((p) => ({
+        time: toUTCTimestamp(p.timestamp),
+        value: p.drawdown ?? 0,
+      })),
+    );
+
+    chart.timeScale().fitContent();
+
+    return () => {
+      try {
+        chart.removeSeries(ddA);
+        chart.removeSeries(ddB);
+      } catch (e) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Compare drawdown chart series cleanup:", e);
+        }
+      }
+    };
+  }, [drawdownChartRef, stratA, stratB]);
 
   const runCompare = async () => {
     setLoading(true);
@@ -404,6 +352,15 @@ export default function ComparePage() {
     if (bWins > aWins) return "B";
     return "tie";
   }, [stratA, stratB]);
+
+  const handleEquityResetZoom = useCallback(() => {
+    if (equityChartRef.current) {
+      equityChartRef.current.timeScale().resetTimeScale();
+      equityChartRef.current
+        .priceScale("right")
+        .applyOptions({ autoScale: true });
+    }
+  }, [equityChartRef]);
 
   return (
     <div className="space-y-6">
@@ -621,37 +578,37 @@ export default function ComparePage() {
           </div>
 
           {/* Equity overlay chart */}
-          {equityChartData && (
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-semibold text-white">Equity Curves</h2>
-                <button
-                  onClick={() => equityChartRef.current?.resetZoom()}
-                  className="btn btn-ghost text-xs"
-                >
-                  Reset Zoom
-                </button>
-              </div>
-              <Line
-                ref={equityChartRef}
-                data={equityChartData}
-                options={equityChartOptions}
-              />
-              <p className="text-xs text-zinc-600 mt-2">
-                Scroll to zoom &middot; Drag to pan
-              </p>
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-white">Equity Curves</h2>
+              <button
+                onClick={handleEquityResetZoom}
+                className="btn btn-ghost text-xs"
+              >
+                Reset Zoom
+              </button>
             </div>
-          )}
+            <div
+              ref={equityContainerRef}
+              className="h-[400px] w-full"
+              style={{ position: "relative" }}
+            />
+            <p className="text-xs text-zinc-600 mt-2">
+              Scroll to zoom &middot; Drag to pan
+            </p>
+          </div>
 
           {/* Drawdown comparison chart */}
-          {drawdownChartData && (
-            <div className="card">
-              <h2 className="font-semibold text-white mb-4">
-                Drawdown Comparison
-              </h2>
-              <Line data={drawdownChartData} options={drawdownChartOptions} />
-            </div>
-          )}
+          <div className="card">
+            <h2 className="font-semibold text-white mb-4">
+              Drawdown Comparison
+            </h2>
+            <div
+              ref={drawdownContainerRef}
+              className="h-[300px] w-full"
+              style={{ position: "relative" }}
+            />
+          </div>
         </div>
       )}
     </div>

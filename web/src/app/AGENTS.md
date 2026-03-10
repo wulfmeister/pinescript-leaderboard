@@ -66,9 +66,9 @@ Shared payload fields: `script`, `asset(s)`, `initialCapital`, `timeframe`, `sta
 
 ## Chart conventions
 
-- Chart.js with `react-chartjs-2`. Zoom/pan via `chartjs-plugin-zoom` (lazy-registered).
+- Lightweight Charts (TradingView) v5. Zoom/pan built-in. Shared `useLightweightChart` hook for chart lifecycle.
 - Always include a `Reset Zoom` button when zoom is enabled.
-- `animation: false` in all chart configs for responsiveness.
+- `autoSize: true` in all chart configs. Dark theme via `ColorType.Solid` background.
 - Equity charts used in backtest and portfolio views.
 
 ## Gotchas
