@@ -7,6 +7,7 @@ import {
   type DataSettingsValue,
 } from "../components/data-settings";
 import { type BacktestResult, type SavedStrategy } from "./types";
+import { type OHLCV } from "@pinescript-utils/core";
 import { StrategyEditorPanel } from "./components/StrategyEditorPanel";
 import { BacktestSettingsPanel } from "./components/BacktestSettingsPanel";
 import { BacktestSummaryCards } from "./components/BacktestSummaryCards";
@@ -17,6 +18,11 @@ import { TradeTable } from "./components/TradeTable";
 import { MonthlyPnL } from "./components/MonthlyPnL";
 import { ExportButtons } from "./components/ExportButtons";
 import { OverlaySelector } from "./components/OverlaySelector";
+import { PriceChart } from "./components/PriceChart";
+import {
+  IndicatorToggles,
+  type IndicatorConfig,
+} from "./components/IndicatorToggles";
 
 const SAMPLE_STRATEGY = `//@version=5
 strategy("SMA Crossover", overlay=true)
@@ -43,6 +49,8 @@ export default function BacktestPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BacktestResult | null>(null);
   const [error, setError] = useState("");
+  const [ohlcvData, setOhlcvData] = useState<OHLCV[]>([]);
+  const [indicators, setIndicators] = useState<IndicatorConfig[]>([]);
 
   const [savedStrategies, setSavedStrategies] = useState<SavedStrategy[]>([]);
   const [saveName, setSaveName] = useState("");
@@ -60,8 +68,7 @@ export default function BacktestPage() {
         const data = await res.json();
         setSavedStrategies(data.strategies || []);
       }
-    } catch {
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -127,6 +134,8 @@ export default function BacktestPage() {
     setLoading(true);
     setError("");
     setResult(null);
+    setOhlcvData([]);
+    setIndicators([]);
 
     if (
       !dataSettings.useMock &&
@@ -158,6 +167,7 @@ export default function BacktestPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setResult(data);
+      setOhlcvData(data.ohlcv ?? []);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -245,6 +255,16 @@ export default function BacktestPage() {
                 selectedOverlayId={selectedOverlayId}
                 onSelect={setSelectedOverlayId}
               />
+              {ohlcvData.length > 0 && (
+                <>
+                  <IndicatorToggles onIndicatorChange={setIndicators} />
+                  <PriceChart
+                    ohlcvData={ohlcvData}
+                    trades={result.trades}
+                    indicators={indicators}
+                  />
+                </>
+              )}
               <EquityChart
                 equityCurve={result.equityCurve}
                 trades={result.trades}

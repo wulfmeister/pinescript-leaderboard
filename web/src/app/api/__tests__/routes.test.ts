@@ -233,6 +233,9 @@ describe("API Routes - Validation", () => {
       expect(data).toHaveProperty("metrics");
       expect(data).toHaveProperty("trades");
       expect(data).toHaveProperty("equityCurve");
+      expect(data).toHaveProperty("ohlcv");
+      expect(Array.isArray(data.ohlcv)).toBe(true);
+      expect(data.ohlcv.length).toBe(100);
     });
 
     it("accepts all timeframe options", async () => {
@@ -250,6 +253,33 @@ describe("API Routes - Validation", () => {
         const res = await backtestPost(req);
         expect(res.status).toBe(200);
       }
+    });
+
+    it("returns ohlcv array with correct OHLCV shape", async () => {
+      const req = createRequest({
+        script: sampleScript,
+        asset: "TEST",
+        mock: true,
+        mockBars: 50,
+        mockType: "random",
+        capital: 10000,
+      });
+      const res = await backtestPost(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.ohlcv).toBeDefined();
+      expect(Array.isArray(data.ohlcv)).toBe(true);
+      expect(data.ohlcv.length).toBeGreaterThan(0);
+      const firstBar = data.ohlcv[0];
+      expect(firstBar).toHaveProperty("timestamp");
+      expect(firstBar).toHaveProperty("open");
+      expect(firstBar).toHaveProperty("high");
+      expect(firstBar).toHaveProperty("low");
+      expect(firstBar).toHaveProperty("close");
+      expect(firstBar).toHaveProperty("volume");
+      expect(typeof firstBar.timestamp).toBe("number");
+      expect(typeof firstBar.open).toBe("number");
+      expect(typeof firstBar.close).toBe("number");
     });
   });
 
@@ -410,6 +440,33 @@ describe("API Routes - Validation", () => {
         const res = await optimizePost(req);
         expect(res.status).toBe(200);
       }
+    });
+
+    it("returns ohlcv array with correct OHLCV shape", async () => {
+      const req = createRequest({
+        script: sampleScript,
+        asset: "TEST",
+        mock: true,
+        mockBars: 50,
+        mockType: "random",
+        capital: 10000,
+      });
+      const res = await backtestPost(req);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.ohlcv).toBeDefined();
+      expect(Array.isArray(data.ohlcv)).toBe(true);
+      expect(data.ohlcv.length).toBeGreaterThan(0);
+      const firstBar = data.ohlcv[0];
+      expect(firstBar).toHaveProperty("timestamp");
+      expect(firstBar).toHaveProperty("open");
+      expect(firstBar).toHaveProperty("high");
+      expect(firstBar).toHaveProperty("low");
+      expect(firstBar).toHaveProperty("close");
+      expect(firstBar).toHaveProperty("volume");
+      expect(typeof firstBar.timestamp).toBe("number");
+      expect(typeof firstBar.open).toBe("number");
+      expect(typeof firstBar.close).toBe("number");
     });
   });
 

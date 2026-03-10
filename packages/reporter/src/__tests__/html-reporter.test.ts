@@ -204,6 +204,23 @@ describe("generateHTMLReport", () => {
       expect(matches).not.toBeNull();
       expect(matches!.length).toBeGreaterThanOrEqual(3);
     });
+
+    it('includes subscribeCrosshairMove for tooltips', () => {
+      const html = generateHTMLReport(result, data);
+      const count = (html.match(/subscribeCrosshairMove/g) || []).length;
+      expect(count).toBeGreaterThanOrEqual(3);
+    });
+
+    it('includes Reset Zoom buttons', () => {
+      const html = generateHTMLReport(result, data);
+      const count = (html.match(/Reset Zoom/g) || []).length;
+      expect(count).toBeGreaterThanOrEqual(3);
+    });
+
+    it('includes tooltip div', () => {
+      const html = generateHTMLReport(result, data);
+      expect(html).toContain('id="tooltip"');
+    });
   });
 
   describe("chart data", () => {

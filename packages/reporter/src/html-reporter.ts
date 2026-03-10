@@ -305,9 +305,12 @@ function generateMetricCards(result: BacktestResult, theme: string): string {
 
 function generateChartsSection(result: BacktestResult, theme: string): string {
   return `
+        <div id="tooltip" style="position:absolute;display:none;background:#1c1c1e;border:1px solid #3f3f46;border-radius:4px;padding:4px 8px;font-size:12px;color:#fff;pointer-events:none;z-index:100;"></div>
+
         <div class="section">
             <div class="chart-container">
                 <h2>Equity Curve</h2>
+                <button onclick="equityChart.timeScale().resetTimeScale(); equityChart.priceScale('right').applyOptions({autoScale:true});" style="margin-bottom:8px;padding:4px 12px;cursor:pointer;border:1px solid #3f3f46;border-radius:4px;background:#1c1c1e;color:#fff;font-size:12px;">Reset Zoom</button>
                 <div class="chart-wrapper">
                     <div id="equityChart" style="height: 400px;"></div>
                 </div>
@@ -317,6 +320,7 @@ function generateChartsSection(result: BacktestResult, theme: string): string {
         <div class="section">
             <div class="chart-container">
                 <h2>Drawdown</h2>
+                <button onclick="drawdownChart.timeScale().resetTimeScale(); drawdownChart.priceScale('right').applyOptions({autoScale:true});" style="margin-bottom:8px;padding:4px 12px;cursor:pointer;border:1px solid #3f3f46;border-radius:4px;background:#1c1c1e;color:#fff;font-size:12px;">Reset Zoom</button>
                 <div class="chart-wrapper">
                     <div id="drawdownChart" style="height: 400px;"></div>
                 </div>
@@ -326,6 +330,7 @@ function generateChartsSection(result: BacktestResult, theme: string): string {
         <div class="section">
             <div class="chart-container">
                 <h2>Monthly Returns</h2>
+                <button onclick="monthlyChart.timeScale().resetTimeScale(); monthlyChart.priceScale('right').applyOptions({autoScale:true});" style="margin-bottom:8px;padding:4px 12px;cursor:pointer;border:1px solid #3f3f46;border-radius:4px;background:#1c1c1e;color:#fff;font-size:12px;">Reset Zoom</button>
                 <div class="chart-wrapper">
                     <div id="monthlyReturnsChart" style="height: 400px;"></div>
                 </div>
@@ -441,6 +446,17 @@ function generateChartScripts(result: BacktestResult, theme: string): string {
         });
         equitySeries.setData(${JSON.stringify(equityData)});
         equityChart.timeScale().fitContent();
+        equityChart.subscribeCrosshairMove(function(param) {
+            var tooltip = document.getElementById('tooltip');
+            if (!param.point || !param.time) { tooltip.style.display = 'none'; return; }
+            var price = param.seriesData.values().next().value;
+            if (!price) { tooltip.style.display = 'none'; return; }
+            var val = price.value !== undefined ? price.value : price.close;
+            tooltip.innerHTML = '$' + val.toFixed(2);
+            tooltip.style.display = 'block';
+            tooltip.style.left = (param.point.x + 15) + 'px';
+            tooltip.style.top = (param.point.y - 20) + 'px';
+        });
 
         const drawdownChart = LightweightCharts.createChart(document.getElementById('drawdownChart'), {
             height: 400,
@@ -460,6 +476,17 @@ function generateChartScripts(result: BacktestResult, theme: string): string {
         });
         drawdownSeries.setData(${JSON.stringify(drawdownData)});
         drawdownChart.timeScale().fitContent();
+        drawdownChart.subscribeCrosshairMove(function(param) {
+            var tooltip = document.getElementById('tooltip');
+            if (!param.point || !param.time) { tooltip.style.display = 'none'; return; }
+            var price = param.seriesData.values().next().value;
+            if (!price) { tooltip.style.display = 'none'; return; }
+            var val = price.value !== undefined ? price.value : price.close;
+            tooltip.innerHTML = '$' + val.toFixed(2);
+            tooltip.style.display = 'block';
+            tooltip.style.left = (param.point.x + 15) + 'px';
+            tooltip.style.top = (param.point.y - 20) + 'px';
+        });
 
         const monthlyChart = LightweightCharts.createChart(document.getElementById('monthlyReturnsChart'), {
             height: 400,
@@ -471,6 +498,17 @@ function generateChartScripts(result: BacktestResult, theme: string): string {
         const monthlySeries = monthlyChart.addSeries(LightweightCharts.HistogramSeries, {});
         monthlySeries.setData(${JSON.stringify(monthlyData)});
         monthlyChart.timeScale().fitContent();
+        monthlyChart.subscribeCrosshairMove(function(param) {
+            var tooltip = document.getElementById('tooltip');
+            if (!param.point || !param.time) { tooltip.style.display = 'none'; return; }
+            var price = param.seriesData.values().next().value;
+            if (!price) { tooltip.style.display = 'none'; return; }
+            var val = price.value !== undefined ? price.value : price.close;
+            tooltip.innerHTML = '$' + val.toFixed(2);
+            tooltip.style.display = 'block';
+            tooltip.style.left = (param.point.x + 15) + 'px';
+            tooltip.style.top = (param.point.y - 20) + 'px';
+        });
     </script>`;
 }
 

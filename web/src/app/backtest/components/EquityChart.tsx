@@ -16,6 +16,10 @@ import {
 } from "../../hooks/useLightweightChart";
 import { type EquityPoint, type Trade } from "../types";
 
+import { ChartScreenshotButton } from "../../components/chart-screenshot-button";
+import { ChartFullscreenToggle } from "../../components/chart-fullscreen-toggle";
+import { ChartDatePresets } from "../../components/chart-date-presets";
+
 interface Props {
   equityCurve: EquityPoint[];
   trades: Trade[];
@@ -190,6 +194,9 @@ export function EquityChart({
               </span>
             </div>
           )}
+          <ChartDatePresets chartRef={chartRef} lastTimestamp={equityCurve[equityCurve.length - 1]?.timestamp} />
+          <ChartScreenshotButton chartRef={chartRef} filename="equity-chart.png" />
+          <ChartFullscreenToggle containerRef={containerRef} />
           <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
             Reset Zoom
           </button>

@@ -8,6 +8,9 @@ import {
   useChartTooltip,
   toUTCTimestamp,
 } from "../../hooks/useLightweightChart";
+import { ChartDatePresets } from "../../components/chart-date-presets";
+import { ChartScreenshotButton } from "../../components/chart-screenshot-button";
+import { ChartFullscreenToggle } from "../../components/chart-fullscreen-toggle";
 
 // Minimal EquityPoint for portfolio data (no drawdown field).
 // Intentionally differs from backtest/types.ts EquityPoint which includes drawdown.
@@ -58,7 +61,6 @@ export function PortfolioEquityChart({
 
   useChartTooltip(chartRef, containerRef, formatValue);
 
-
   const combinedLineData = useMemo(
     () =>
       combined.map((p) => ({
@@ -67,7 +69,6 @@ export function PortfolioEquityChart({
       })),
     [combined],
   );
-
 
   const assetLineData = useMemo(
     () =>
@@ -81,11 +82,9 @@ export function PortfolioEquityChart({
     [perAsset],
   );
 
-
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart || combinedLineData.length === 0) return;
-
 
     const combinedSeries = chart.addSeries(LineSeries, {
       color: "#22c55e",
@@ -94,7 +93,6 @@ export function PortfolioEquityChart({
     });
     combinedSeries.setData(combinedLineData);
     combinedSeriesRef.current = combinedSeries;
-
 
     const assetSeries: ISeriesApi<"Line">[] = [];
     assetLineData.forEach((asset, idx) => {
@@ -108,9 +106,7 @@ export function PortfolioEquityChart({
     });
     assetSeriesRefs.current = assetSeries;
 
-
     chart.timeScale().fitContent();
-
 
     return () => {
       if (chartRef.current) {
@@ -124,7 +120,10 @@ export function PortfolioEquityChart({
               chartRef.current?.removeSeries(s);
             } catch (e) {
               if (process.env.NODE_ENV !== "production") {
-                console.warn("PortfolioEquityChart per-asset series cleanup:", e);
+                console.warn(
+                  "PortfolioEquityChart per-asset series cleanup:",
+                  e,
+                );
               }
             }
           });
@@ -168,9 +167,20 @@ export function PortfolioEquityChart({
             </span>
           ))}
         </div>
-        <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
-          Reset Zoom
-        </button>
+        <div className="flex items-center gap-2">
+          <ChartDatePresets
+            chartRef={chartRef}
+            lastTimestamp={combined[combined.length - 1]?.timestamp}
+          />
+          <ChartScreenshotButton
+            chartRef={chartRef}
+            filename="portfolio-equity.png"
+          />
+          <ChartFullscreenToggle containerRef={containerRef} />
+          <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
+            Reset Zoom
+          </button>
+        </div>
       </div>
       <div
         ref={containerRef}

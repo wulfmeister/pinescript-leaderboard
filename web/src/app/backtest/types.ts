@@ -1,3 +1,5 @@
+import { type OHLCV } from "@pinescript-utils/core";
+
 
 export interface Metrics {
   totalReturn: number;
@@ -40,6 +42,7 @@ export interface BacktestResult {
   signalCount: number;
   equityCurve: EquityPoint[];
   trades: Trade[];
+  ohlcv?: OHLCV[];
 }
 
 export interface SavedStrategy {

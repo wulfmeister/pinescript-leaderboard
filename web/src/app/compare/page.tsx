@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { LineSeries, AreaSeries } from "lightweight-charts";
 import {
   useLightweightChart,
+  useChartTooltip,
   toUTCTimestamp,
 } from "../hooks/useLightweightChart";
 import {
@@ -107,7 +108,6 @@ export default function ComparePage() {
   const equityContainerRef = useRef<HTMLDivElement>(null);
   const drawdownContainerRef = useRef<HTMLDivElement>(null);
 
-
   const equityChartOptions = useMemo(
     () => ({
       localization: {
@@ -124,15 +124,12 @@ export default function ComparePage() {
 
   const drawdownChartOptions = useMemo(
     () => ({
-      handleScroll: false,
-      handleScale: false,
       localization: {
         priceFormatter: (price: number) => `${price.toFixed(2)}%`,
       },
     }),
     [],
   );
-
 
   const equityChartRef = useLightweightChart(
     equityContainerRef,
@@ -142,6 +139,24 @@ export default function ComparePage() {
     drawdownContainerRef,
     drawdownChartOptions,
   );
+
+  const formatEquityValue = useCallback(
+    (val: number) =>
+      "$" +
+      val.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+    [],
+  );
+
+  const formatDrawdownValue = useCallback(
+    (val: number) => `${(val * 100).toFixed(2)}%`,
+    [],
+  );
+
+  useChartTooltip(equityChartRef, equityContainerRef, formatEquityValue);
+  useChartTooltip(drawdownChartRef, drawdownContainerRef, formatDrawdownValue);
 
   const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
   const usd = (v: number) =>
@@ -177,7 +192,6 @@ export default function ComparePage() {
         ? "B"
         : "tie";
   };
-
 
   useEffect(() => {
     const chart = equityChartRef.current;
@@ -231,7 +245,6 @@ export default function ComparePage() {
       }
     };
   }, [equityChartRef, stratA, stratB, capital]);
-
 
   useEffect(() => {
     const chart = drawdownChartRef.current;
@@ -361,6 +374,15 @@ export default function ComparePage() {
         .applyOptions({ autoScale: true });
     }
   }, [equityChartRef]);
+
+  const handleDrawdownResetZoom = useCallback(() => {
+    if (drawdownChartRef.current) {
+      drawdownChartRef.current.timeScale().resetTimeScale();
+      drawdownChartRef.current
+        .priceScale("right")
+        .applyOptions({ autoScale: true });
+    }
+  }, [drawdownChartRef]);
 
   return (
     <div className="space-y-6">
@@ -600,14 +622,23 @@ export default function ComparePage() {
 
           {/* Drawdown comparison chart */}
           <div className="card">
-            <h2 className="font-semibold text-white mb-4">
-              Drawdown Comparison
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-white">Drawdown Comparison</h2>
+              <button
+                onClick={handleDrawdownResetZoom}
+                className="btn btn-ghost text-xs"
+              >
+                Reset Zoom
+              </button>
+            </div>
             <div
               ref={drawdownContainerRef}
               className="h-[300px] w-full"
               style={{ position: "relative" }}
             />
+            <p className="text-xs text-zinc-600 mt-2">
+              Scroll to zoom &middot; Drag to pan
+            </p>
           </div>
         </div>
       )}

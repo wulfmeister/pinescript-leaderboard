@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       endTime: result.endTime,
       dataPoints: data.length,
       signalCount: signals.length,
+      ohlcv: data,
     });
   } catch (error: any) {
     return NextResponse.json(

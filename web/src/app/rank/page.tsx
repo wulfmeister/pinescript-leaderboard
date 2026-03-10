@@ -1,12 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import {
   DataSettings,
   getDefaultDataSettings,
   formatDataSourceBadge,
   type DataSettingsValue,
 } from "../components/data-settings";
+
+import { LineSeries, type ISeriesApi } from "lightweight-charts";
+import {
+  useLightweightChart,
+  useChartTooltip,
+  toUTCTimestamp,
+} from "../hooks/useLightweightChart";
 
 const SAMPLE_STRATEGIES = [
   {
@@ -344,7 +351,7 @@ function ScoreComparisonChart({ results }: { results: RankedResult[] }) {
           const width = maxScore > 0 ? (r.score / maxScore) * 100 : 0;
           const color = colors[Math.min(i, colors.length - 1)];
           return (
-            <div key={r.name} className="flex items-center gap-3">
+            <div key={r.name} className="relative group flex items-center gap-3">
               <div className="w-24 text-sm text-zinc-400 truncate">{r.name}</div>
               <div className="flex-1 h-8 bg-zinc-800 rounded-full overflow-hidden">
                 <div
@@ -370,6 +377,9 @@ function ScoreComparisonChart({ results }: { results: RankedResult[] }) {
                 >
                   {r.rank}
                 </span>
+              </div>
+              <div className="absolute left-28 -top-7 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white whitespace-nowrap invisible group-hover:visible z-10 pointer-events-none">
+                {r.name}: {r.score.toFixed(4)}
               </div>
             </div>
           );
@@ -419,10 +429,12 @@ function MetricsComparisonChart({ results }: { results: RankedResult[] }) {
                 return (
                   <div
                     key={i}
-                    className="flex flex-col items-center justify-end"
+                    className="relative group flex flex-col items-center justify-end"
                     style={{ width: barWidth }}
-                    title={`${d.name}: ${metric.format(d.raw[metric.key as keyof typeof d.raw] as number)}`}
                   >
+                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white whitespace-nowrap invisible group-hover:visible z-10 pointer-events-none">
+                      {d.name}: {metric.format(d.raw[metric.key as keyof typeof d.raw] as number)}
+                    </div>
                     <div
                       className="w-full rounded-t transition-all duration-500"
                       style={{
@@ -459,125 +471,93 @@ function MetricsComparisonChart({ results }: { results: RankedResult[] }) {
   );
 }
 
-// Chart 3: Equity Curves Overlay (Line Chart)
+// Chart 3: Equity Curves Overlay (Lightweight Charts)
 function EquityCurvesChart({ results, capital }: { results: RankedResult[]; capital: number }) {
   if (results.length === 0 || !results[0]?.equityCurve?.length) return null;
 
   const colors = ["#fbbf24", "#9ca3af", "#b45309", "#22c55e", "#3b82f6", "#8b5cf6"];
-  const width = 800;
-  const height = 200;
-  const padding = { top: 10, right: 10, bottom: 30, left: 60 };
-  const chartWidth = width - padding.left - padding.right;
-  const chartHeight = height - padding.top - padding.bottom;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartRef = useLightweightChart(containerRef);
+  const seriesRefs = useRef<ISeriesApi<"Line">[]>([]);
 
-  // Find min and max equity across all curves
-  let minEquity = Infinity;
-  let maxEquity = -Infinity;
-  
-  results.forEach((r) => {
-    if (r.equityCurve?.length) {
-      r.equityCurve.forEach((p) => {
-        minEquity = Math.min(minEquity, p.equity);
-        maxEquity = Math.max(maxEquity, p.equity);
+  const formatValue = useCallback(
+    (val: number) =>
+      `$${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    [],
+  );
+
+  useChartTooltip(chartRef, containerRef, formatValue);
+
+  const lineData = useMemo(
+    () =>
+      results.map((r) => ({
+        name: r.name,
+        data: (r.equityCurve ?? []).map((p) => ({
+          time: toUTCTimestamp(p.timestamp),
+          value: p.equity,
+        })),
+      })),
+    [results],
+  );
+
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart || lineData.length === 0) return;
+
+    const created: ISeriesApi<"Line">[] = [];
+    lineData.forEach((entry, idx) => {
+      if (entry.data.length === 0) return;
+      const series = chart.addSeries(LineSeries, {
+        color: colors[idx % colors.length],
+        lineWidth: 2,
+        priceLineVisible: false,
       });
+      series.setData(entry.data);
+      created.push(series);
+    });
+    seriesRefs.current = created;
+
+    chart.timeScale().fitContent();
+
+    return () => {
+      if (chartRef.current) {
+        seriesRefs.current.forEach((s) => {
+          try {
+            chartRef.current?.removeSeries(s);
+          } catch (e) {
+            if (process.env.NODE_ENV !== "production") {
+              console.warn("EquityCurvesChart series cleanup:", e);
+            }
+          }
+        });
+        seriesRefs.current = [];
+      }
+    };
+  }, [chartRef, lineData]);
+
+  const handleResetZoom = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().resetTimeScale();
+      chartRef.current.priceScale("right").applyOptions({ autoScale: true });
     }
-  });
-
-  // Ensure we have valid range
-  if (minEquity === Infinity) {
-    minEquity = capital * 0.95;
-    maxEquity = capital * 1.05;
-  }
-
-  const equityRange = maxEquity - minEquity || 1;
-
-  // Sample points for smoother curves
-  const samplePoints = (curve: typeof results[0]['equityCurve'], maxPoints: number) => {
-    if (curve.length <= maxPoints) return curve;
-    const step = Math.ceil(curve.length / maxPoints);
-    return curve.filter((_, i) => i % step === 0);
-  };
+  }, [chartRef]);
 
   return (
     <div className="card">
-      <h2 className="font-semibold text-white mb-4">Equity Curves Comparison</h2>
-      <div className="overflow-x-auto">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="w-full max-w-4xl"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {/* Background grid */}
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-            <g key={t}>
-              <line
-                x1={padding.left}
-                y1={padding.top + chartHeight * t}
-                x2={width - padding.right}
-                y2={padding.top + chartHeight * t}
-                stroke="#27272a"
-                strokeWidth="1"
-              />
-            </g>
-          ))}
-
-          {/* Y-axis labels */}
-          {[0, 0.25, 0.5, 0.75, 1].map((t) => {
-            const value = minEquity + equityRange * (1 - t);
-            return (
-              <text
-                key={t}
-                x={padding.left - 10}
-                y={padding.top + chartHeight * t + 4}
-                fill="#71717a"
-                fontSize="10"
-                textAnchor="end"
-              >
-                ${(value / 1000).toFixed(1)}k
-              </text>
-            );
-          })}
-
-          {/* Equity curves */}
-          {results.map((r, i) => {
-            if (!r.equityCurve?.length) return null;
-            const points = samplePoints(r.equityCurve, 100);
-            const pathData = points
-              .map((p, idx) => {
-                const x = padding.left + (idx / (points.length - 1)) * chartWidth;
-                const y = padding.top + chartHeight - ((p.equity - minEquity) / equityRange) * chartHeight;
-                return `${idx === 0 ? "M" : "L"} ${x} ${y}`;
-              })
-              .join(" ");
-
-            return (
-              <g key={r.name}>
-                <path
-                  d={pathData}
-                  fill="none"
-                  stroke={colors[i % colors.length]}
-                  strokeWidth="2"
-                  opacity={0.8}
-                />
-              </g>
-            );
-          })}
-
-          {/* Initial capital reference line */}
-          {capital > 0 && (
-            <line
-              x1={padding.left}
-              y1={padding.top + chartHeight - ((capital - minEquity) / equityRange) * chartHeight}
-              x2={width - padding.right}
-              y2={padding.top + chartHeight - ((capital - minEquity) / equityRange) * chartHeight}
-              stroke="#52525b"
-              strokeWidth="1"
-              strokeDasharray="4,4"
-            />
-          )}
-        </svg>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-semibold text-white">Equity Curves Comparison</h2>
+        <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
+          Reset Zoom
+        </button>
       </div>
-
+      <div
+        ref={containerRef}
+        className="h-[300px] w-full"
+        style={{ position: "relative" }}
+      />
+      <p className="text-xs text-zinc-600 mt-2">
+        Scroll to zoom &middot; Drag to pan
+      </p>
       {/* Legend */}
       <div className="flex flex-wrap gap-4 mt-4 pt-4 border-t border-zinc-800">
         {results.map((r, i) => (
@@ -592,10 +572,6 @@ function EquityCurvesChart({ results, capital }: { results: RankedResult[]; capi
             </span>
           </div>
         ))}
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="w-4 h-px border-t border-dashed border-zinc-500" />
-          <span className="text-xs text-zinc-500">Initial Capital</span>
-        </div>
       </div>
     </div>
   );

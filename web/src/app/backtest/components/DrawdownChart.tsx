@@ -9,6 +9,10 @@ import {
   toUTCTimestamp,
 } from "../../hooks/useLightweightChart";
 
+import { ChartScreenshotButton } from "../../components/chart-screenshot-button";
+import { ChartFullscreenToggle } from "../../components/chart-fullscreen-toggle";
+import { ChartDatePresets } from "../../components/chart-date-presets";
+
 interface Props {
   equityCurve: EquityPoint[];
 }
@@ -52,12 +56,32 @@ export function DrawdownChart({ equityCurve }: Props) {
 
   useChartTooltip(chartRef, containerRef, formatTooltip);
 
+  const handleResetZoom = useCallback(() => {
+    if (chartRef.current) {
+      chartRef.current.timeScale().resetTimeScale();
+      chartRef.current.priceScale("right").applyOptions({ autoScale: true });
+    }
+  }, [chartRef]);
+
   return (
     <div className="card">
-      <h2 className="font-semibold text-white mb-4">Drawdown</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-white">Drawdown</h2>
+        <div className="flex items-center gap-4">
+          <ChartDatePresets chartRef={chartRef} lastTimestamp={equityCurve[equityCurve.length - 1]?.timestamp} />
+          <ChartScreenshotButton chartRef={chartRef} filename="drawdown-chart.png" />
+          <ChartFullscreenToggle containerRef={containerRef} />
+          <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
+            Reset Zoom
+          </button>
+        </div>
+      </div>
       <div style={{ position: "relative" }}>
         <div ref={containerRef} className="h-[400px] w-full" />
       </div>
+      <p className="text-xs text-zinc-600 mt-2">
+        Scroll to zoom &middot; Drag to pan
+      </p>
     </div>
   );
 }
