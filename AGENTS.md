@@ -26,11 +26,33 @@ Top-level (relevant):
 - `packages/*`: shared domain packages.
 - `web/`: Next.js 14 app (App Router) with API routes and UI pages.
 - `cli/`: Commander-based CLI tool (`pinescript-utils`).
+- `strategies/`: bundled `.pine` strategy files (RSI, MACD, BB, SMA crossover, EMA variants). Used as defaults/examples by CLI and web.
 - `e2e/`: Playwright tests and screenshots.
 - `scripts/`: helper scripts (`find-port.mjs`, `test-cli.mjs`).
 - `turbo.json`, `tsconfig.json`, `vitest.config.ts`, `playwright.config.ts`: build/test orchestration.
 
 Do not include or depend on `.sisyphus/` internals for implementation decisions.
+
+## Package dependency graph
+
+Dependency flows top-down. Packages only depend on packages above them:
+
+```
+core (zero internal deps)
+  ├── pine-runtime (core)
+  ├── data-feed (core)
+  ├── risk-manager (core)
+  ├── reporter (core)
+  ├── pine-exporter (core)
+  ├── monte-carlo (core)
+  ├── venice (core)
+  ├── backtester (core, risk-manager)
+  ├── ranker (core, backtester)
+  ├── optimizer (core, backtester, pine-runtime)
+  ├── walk-forward (core, backtester, optimizer, pine-runtime)
+  ├── portfolio (core, backtester, pine-runtime)
+  └── llm-arena (core, backtester, pine-runtime, venice)
+```
 
 ## Tech stack
 
@@ -124,6 +146,7 @@ Each package typically builds with `tsc` from `src` to `dist`, exports from `src
 UI pages under `web/src/app`:
 
 - `/backtest`: full strategy editor + run flow + charts + overlays + export.
+- `/compare`: side-by-side strategy comparison with overlaid equity charts.
 - `/optimize`: parameter optimization, range editor, heatmap and run inspection.
 - `/rank`: multi-strategy comparison and visual ranking.
 - `/walk-forward`: out-of-sample window analysis and efficiency metrics.
@@ -256,6 +279,7 @@ E2E tests (Playwright):
 
 ## Known issues and implementation notes for agents
 
+- **Active bug**: `DrawdownChart.tsx` throws "Value is undefined" at `chart.removeSeries(series)` — visible in E2E screenshots (`backtest-results.png`, `backtest-charts-lw.png`). The chart ref or series is null on cleanup. Needs a guard check before calling `removeSeries`.
 - Historical LSP note: `pineRuntime` export resolution has surfaced in editor diagnostics in parts of the workspace; verify current package export paths before refactors.
 - Historical chart typing note: duplicate `interaction` option declarations in chart configs previously caused type diagnostics; this has already been fixed in current chart code.
 - Venice model IDs used in UI/CLI should match current Venice docs (`docs.venice.ai`). Current hardcoded tournament model set is:

@@ -55,20 +55,26 @@ export class PineTSAdapter implements IPineRuntime {
         ? mapOverrides(params, paramOverrides)
         : {};
 
+      // Cache preprocessed script to avoid re-running v2→v5 conversion.
+      // Note: We intentionally do NOT cache PineTS transpiledCode because the
+      // transpiled function references internal context state that is
+      // incompatible with fresh PineTS instances and strategy namespace injection.
       const cached = this.transpileCache.getOrTranspile(
         preprocessedScript,
         (source) => ({
           scriptHash: "",
-          indicators: new Map<string, unknown>([["source", source]]),
+          indicators: new Map<string, unknown>([["preprocessed", source]]),
           rules: new Map<string, unknown>(),
           inputs: new Map<string, number>(),
           timestamp: Date.now(),
         }),
       );
 
-      const cachedScript = cached.indicators.get("source");
+      const cachedPreprocessed = cached.indicators.get("preprocessed");
       const scriptToRun =
-        typeof cachedScript === "string" ? cachedScript : preprocessedScript;
+        typeof cachedPreprocessed === "string"
+          ? cachedPreprocessed
+          : preprocessedScript;
 
       let runtimeContext: any = null;
       const strategyNamespace = new StrategyNamespace(() => {
@@ -106,7 +112,10 @@ export class PineTSAdapter implements IPineRuntime {
       await pinets.run(runnable, candles.length);
 
       return strategyNamespace.getSignals();
-    } catch {
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("pine-runtime: executeStrategy failed:", err);
+      }
       return [];
     }
   }
@@ -125,7 +134,10 @@ export class PineTSAdapter implements IPineRuntime {
       }
 
       return [];
-    } catch {
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("pine-runtime: executeIndicator failed:", err);
+      }
       return [];
     }
   }
@@ -138,6 +150,14 @@ export class PineTSAdapter implements IPineRuntime {
     return validatePineScript(script);
   }
 
+  /**
+   * Inject strategy namespace into PineTS context before execution.
+   *
+   * WARNING: Uses PineTS private API `_initializeContext` because there is
+   * no public hook to inject `strategy` into the Pine namespace before
+   * bar-by-bar execution begins. This is pinned to pinets ^0.8.x —
+   * verify this still works after any pinets version bump.
+   */
   private injectStrategyNamespace(
     pinets: PineTS,
     strategy: StrategyCallableWithParam,
@@ -148,7 +168,13 @@ export class PineTSAdapter implements IPineRuntime {
     };
 
     const originalInitializeContext = runtime._initializeContext;
-    if (!originalInitializeContext) return;
+    if (!originalInitializeContext) {
+      console.warn(
+        "pinets: _initializeContext not found — strategy injection skipped. " +
+        "This may indicate an incompatible pinets version (expected ^0.8.x).",
+      );
+      return;
+    }
 
     runtime._initializeContext = (inputs?: Record<string, unknown>) => {
       const context = originalInitializeContext.call(pinets, inputs);

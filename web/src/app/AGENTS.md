@@ -13,16 +13,17 @@ app/
 ├── components/
 │   ├── data-settings.tsx   # CANONICAL mock/real data selector — use everywhere
 │   └── __tests__/
+├── compare/page.tsx           # Side-by-side strategy comparison
 ├── backtest/
 │   ├── page.tsx            # Strategy editor + run + charts + overlays
 │   └── components/         # 10 components: EquityChart, TradeTable, SignalOverlay, etc.
 ├── optimize/
-│   ├── page.tsx            # 917 lines — parameter ranges + heatmap + run inspection
+│   ├── page.tsx            # Parameter ranges + heatmap + run inspection (largest page file)
 │   ├── components/         # Heatmap visualization components
 │   └── utils/              # transformHeatmapData and helpers
-├── rank/page.tsx           # 602 lines — multi-strategy comparison
-├── walk-forward/page.tsx   # 565 lines — window config + efficiency metrics
-├── arena/page.tsx          # 714 lines — generate/chat/tournament tabs
+├── rank/page.tsx           # Multi-strategy comparison
+├── walk-forward/page.tsx   # Window config + efficiency metrics
+├── arena/page.tsx          # Generate/chat/tournament tabs
 ├── portfolio/
 │   ├── page.tsx            # Multi-asset backtest + correlation matrix
 │   └── components/         # Portfolio-specific chart components
@@ -73,7 +74,7 @@ Shared payload fields: `script`, `asset(s)`, `initialCapital`, `timeframe`, `sta
 
 ## Gotchas
 
-- Large page files (optimize: 917, arena: 714, rank: 602, walk-forward: 565 lines). Heavy state management in each.
+- Large page files (optimize, arena, rank, walk-forward are all 500+ lines). Heavy state management in each.
 - `web/src/components/` and `web/src/lib/` exist but are mostly empty — shared components live under `app/components/`.
 - The `@/*` path alias maps to `./src/*` (configured in `web/tsconfig.json`).
 - Web dev server uses dynamic port selection via `scripts/find-port.mjs` starting from 3000.

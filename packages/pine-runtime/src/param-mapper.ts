@@ -44,9 +44,39 @@ export function extractParams(script: string): StrategyParameter[] {
 }
 
 /**
+ * Clamp a value to the parameter's declared minval/maxval bounds.
+ * If step is defined, snaps to nearest valid step from minval (or 0).
+ */
+export function clampToConstraints(
+  value: number,
+  param: StrategyParameter,
+): number {
+  let clamped = value;
+  if (param.minval !== undefined && clamped < param.minval) {
+    clamped = param.minval;
+  }
+  if (param.maxval !== undefined && clamped > param.maxval) {
+    clamped = param.maxval;
+  }
+  if (param.step !== undefined && param.step > 0) {
+    const base = param.minval ?? 0;
+    clamped = base + Math.round((clamped - base) / param.step) * param.step;
+    // Re-clamp after step snapping to avoid floating point drift past bounds
+    if (param.minval !== undefined && clamped < param.minval) {
+      clamped = param.minval;
+    }
+    if (param.maxval !== undefined && clamped > param.maxval) {
+      clamped = param.maxval;
+    }
+  }
+  return clamped;
+}
+
+/**
  * Translate optimizer overrides (keyed by variable name like `fastLength`)
  * to PineTS overrides (keyed by title like `"Fast Length"`).
  * Falls back to variable name when no title exists.
+ * Clamps values to declared minval/maxval/step constraints.
  */
 export function mapOverrides(
   params: StrategyParameter[],
@@ -57,7 +87,7 @@ export function mapOverrides(
   for (const param of params) {
     if (!(param.name in overrides)) continue;
     const resolvedKey = param.title ?? param.name;
-    mapped[resolvedKey] = overrides[param.name];
+    mapped[resolvedKey] = clampToConstraints(overrides[param.name], param);
   }
 
   return mapped;

@@ -1,4 +1,4 @@
-import { PineTS } from "pinets";
+import { Indicator, PineTS } from "pinets";
 import { preprocessV2 } from "./v2-preprocessor.js";
 import type {
   ValidationResult,
@@ -34,10 +34,14 @@ export function validateScript(script: string): ValidationResult {
         close: 103,
         volume: 1000,
         openTime: 1704067200000,
+        closeTime: 1704070800000,
       },
     ];
+    // Construct PineTS and Indicator to trigger transpilation-time errors.
+    // ready() is a no-op for static array sources (data already loaded).
     const pinets = new PineTS(mockData);
-    pinets.ready();
+    // Constructing Indicator triggers script parsing/transpilation
+    new Indicator(preprocessed);
 
     return { valid: true, errors, warnings };
   } catch (e: any) {

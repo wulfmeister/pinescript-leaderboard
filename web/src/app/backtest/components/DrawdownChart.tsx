@@ -45,7 +45,13 @@ export function DrawdownChart({ equityCurve }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      chart.removeSeries(series);
+      try {
+        if (series) {
+          chart.removeSeries(series);
+        }
+      } catch {
+        // Chart may already be disposed during unmount
+      }
     };
   }, [chartRef, drawdownData]);
 
