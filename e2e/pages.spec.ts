@@ -31,7 +31,7 @@ test.describe("Page rendering and screenshots", () => {
 });
 
 test.describe("Dashboard", () => {
-  test("displays feature cards", async ({ page }) => {
+  test("displays feature cards and leaderboard", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
@@ -41,6 +41,10 @@ test.describe("Dashboard", () => {
 
     // Should have main heading
     await expect(page.locator("h1")).toContainText("PineScript Utils");
+
+    // Should have leaderboard section (loading or loaded)
+    const leaderboard = page.locator("text=Backtesting").or(page.locator("text=Live Leaderboard"));
+    await expect(leaderboard.first()).toBeVisible({ timeout: 5000 });
   });
 });
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LeaderboardSection } from "./components/leaderboard-section";
 
 const FEATURES = [
   {
@@ -66,6 +67,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <LeaderboardSection />
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {FEATURES.map((f) => (
