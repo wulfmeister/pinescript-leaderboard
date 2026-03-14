@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getDefaultDataSettings,
   formatDataSourceBadge,
@@ -8,6 +9,7 @@ import {
 } from "../components/data-settings";
 import { type BacktestResult, type SavedStrategy } from "./types";
 import { type OHLCV } from "@pinescript-utils/core";
+import { SAMPLE_STRATEGY } from "../lib/sample-strategy";
 import { StrategyEditorPanel } from "./components/StrategyEditorPanel";
 import { BacktestSettingsPanel } from "./components/BacktestSettingsPanel";
 import { BacktestSummaryCards } from "./components/BacktestSummaryCards";
@@ -24,22 +26,16 @@ import {
   type IndicatorConfig,
 } from "./components/IndicatorToggles";
 
-const SAMPLE_STRATEGY = `//@version=5
-strategy("SMA Crossover", overlay=true)
-
-fastLength = input(10, title="Fast SMA Length")
-slowLength = input(30, title="Slow SMA Length")
-
-fastSMA = ta.sma(close, fastLength)
-slowSMA = ta.sma(close, slowLength)
-
-if (ta.crossover(fastSMA, slowSMA))
-    strategy.entry("Long", strategy.long)
-
-if (ta.crossunder(fastSMA, slowSMA))
-    strategy.close("Long")`;
-
 export default function BacktestPage() {
+  return (
+    <Suspense fallback={<div className="text-zinc-500">Loading...</div>}>
+      <BacktestPageInner />
+    </Suspense>
+  );
+}
+
+function BacktestPageInner() {
+  const searchParams = useSearchParams();
   const [script, setScript] = useState(SAMPLE_STRATEGY);
   const [asset, setAsset] = useState("AAPL");
   const [capital, setCapital] = useState("10000");
@@ -57,9 +53,98 @@ export default function BacktestPage() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
   const [selectedOverlayId, setSelectedOverlayId] = useState<string | null>(
     null,
   );
+
+  const runBacktest = useCallback(
+    async (overrides?: {
+      script: string;
+      asset: string;
+      capital: number;
+      dataSettings: DataSettingsValue;
+    }) => {
+      const s = overrides?.script ?? script;
+      const a = overrides?.asset ?? asset;
+      const c = overrides?.capital ?? parseFloat(capital);
+      const ds = overrides?.dataSettings ?? dataSettings;
+
+      setLoading(true);
+      setError("");
+      setResult(null);
+      setOhlcvData([]);
+      setIndicators([]);
+
+      if (
+        !ds.useMock &&
+        ds.from &&
+        ds.to &&
+        new Date(ds.from) > new Date(ds.to)
+      ) {
+        setError("From date must be before To date");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/backtest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            script: s,
+            asset: a,
+            capital: c,
+            timeframe: ds.timeframe,
+            from: ds.from,
+            to: ds.to,
+            mock: ds.useMock,
+            mockType: ds.mockType,
+            mockBars: ds.mockBars,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        setResult(data);
+        setOhlcvData(data.ohlcv ?? []);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [script, asset, capital, dataSettings],
+  );
+
+  // Load shared or gallery strategy from URL params
+  useEffect(() => {
+    const shareId = searchParams.get("s");
+    const galleryId = searchParams.get("gallery");
+
+    if (shareId) {
+      fetch(`/api/share?id=${encodeURIComponent(shareId)}`)
+        .then((res) => (res.ok ? res.json() : Promise.reject("not found")))
+        .then((snapshot) => {
+          setScript(snapshot.script);
+          setAsset(snapshot.asset);
+          setCapital(String(snapshot.capital));
+          setDataSettings(snapshot.dataSettings);
+          runBacktest({
+            script: snapshot.script,
+            asset: snapshot.asset,
+            capital: snapshot.capital,
+            dataSettings: snapshot.dataSettings,
+          });
+        })
+        .catch(() => setError("Shared backtest not found"));
+    } else if (galleryId) {
+      import("../gallery/strategies").then(({ GALLERY_STRATEGIES }) => {
+        const s = GALLERY_STRATEGIES.find((strat) => strat.id === galleryId);
+        if (s) setScript(s.script);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const loadStrategies = useCallback(async () => {
     try {
@@ -130,48 +215,27 @@ export default function BacktestPage() {
     } catch {}
   };
 
-  const runBacktest = async () => {
-    setLoading(true);
-    setError("");
-    setResult(null);
-    setOhlcvData([]);
-    setIndicators([]);
-
-    if (
-      !dataSettings.useMock &&
-      dataSettings.from &&
-      dataSettings.to &&
-      new Date(dataSettings.from) > new Date(dataSettings.to)
-    ) {
-      setError("From date must be before To date");
-      setLoading(false);
-      return;
-    }
-
+  const handleShare = async () => {
     try {
-      const res = await fetch("/api/backtest", {
+      const res = await fetch("/api/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           script,
           asset,
           capital: parseFloat(capital),
-          timeframe: dataSettings.timeframe,
-          from: dataSettings.from,
-          to: dataSettings.to,
-          mock: dataSettings.useMock,
-          mockType: dataSettings.mockType,
-          mockBars: dataSettings.mockBars,
+          dataSettings,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      setResult(data);
-      setOhlcvData(data.ohlcv ?? []);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+      const url = `${window.location.origin}/backtest?s=${data.id}`;
+      await navigator.clipboard.writeText(url);
+      setShareMessage("Link copied!");
+      setTimeout(() => setShareMessage(""), 2000);
+    } catch {
+      setShareMessage("Share failed");
+      setTimeout(() => setShareMessage(""), 2000);
     }
   };
 
@@ -240,7 +304,15 @@ export default function BacktestPage() {
                 {formatDataSourceBadge(dataSettings, asset)}
               </span>
             </div>
-            <ExportButtons result={result} asset={asset} />
+            <div className="flex items-center gap-2">
+              <ExportButtons result={result} asset={asset} />
+              <button
+                onClick={handleShare}
+                className="btn btn-ghost text-xs"
+              >
+                {shareMessage || "Share"}
+              </button>
+            </div>
           </div>
 
           <BacktestSummaryCards metrics={result.metrics} />

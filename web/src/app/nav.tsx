@@ -11,7 +11,9 @@ const NAV_ITEMS = [
   { href: "/rank", label: "Rank" },
   { href: "/optimize", label: "Optimize" },
   { href: "/walk-forward", label: "Walk-Forward" },
+  { href: "/multi-timeframe", label: "Multi-TF" },
   { href: "/portfolio", label: "Portfolio" },
+  { href: "/gallery", label: "Gallery" },
   { href: "/arena", label: "LLM Arena" },
   { href: "/export", label: "Export" },
 ];
@@ -45,7 +47,7 @@ export function NavBar() {
             PineScript Utils
           </Link>
           {/* Desktop nav */}
-          <div className="hidden md:flex gap-1">
+          <div className="hidden lg:flex gap-1">
             {NAV_ITEMS.map((item) => (
               <Link key={item.href} href={item.href} className={linkClass(item.href)}>
                 {item.label}
@@ -54,7 +56,7 @@ export function NavBar() {
           </div>
           {/* Mobile hamburger */}
           <button
-            className="md:hidden text-zinc-400 hover:text-white p-1"
+            className="lg:hidden text-zinc-400 hover:text-white p-1"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
@@ -72,7 +74,7 @@ export function NavBar() {
       </div>
       {/* Mobile panel */}
       {menuOpen && (
-        <div className="md:hidden border-t border-zinc-800 py-2 px-4 space-y-1">
+        <div className="lg:hidden border-t border-zinc-800 py-2 px-4 space-y-1">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}

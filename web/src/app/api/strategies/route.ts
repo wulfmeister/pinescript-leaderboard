@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { ensureDir, safePath, generateId } from "../../lib/storage";
 
 const STORAGE_DIR = path.join(process.cwd(), ".data", "strategies");
 
@@ -28,34 +29,14 @@ interface SavedStrategy {
   };
 }
 
-async function ensureDir() {
-  await fs.mkdir(STORAGE_DIR, { recursive: true });
-}
-
-function safePath(id: string): string | null {
-  const filePath = path.join(STORAGE_DIR, `${id}.json`);
-  const resolved = path.resolve(filePath);
-  if (
-    !resolved.startsWith(path.resolve(STORAGE_DIR) + path.sep) &&
-    resolved !== path.resolve(STORAGE_DIR)
-  ) {
-    return null;
-  }
-  return filePath;
-}
-
-function generateId(): string {
-  return `strat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 export async function GET(req: NextRequest) {
   try {
-    await ensureDir();
+    await ensureDir(STORAGE_DIR);
 
     const id = req.nextUrl.searchParams.get("id");
 
     if (id) {
-      const filePath = safePath(id);
+      const filePath = safePath(STORAGE_DIR, id);
       if (!filePath) {
         return NextResponse.json({ error: "Invalid id" }, { status: 400 });
       }
@@ -101,7 +82,7 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    await ensureDir();
+    await ensureDir(STORAGE_DIR);
     const body = await req.json();
     const { name, script, description, lastResult } = body;
 
@@ -114,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date().toISOString();
     const strategy: SavedStrategy = {
-      id: generateId(),
+      id: generateId("strat"),
       name,
       script,
       description,
@@ -139,7 +120,7 @@ export async function POST(req: NextRequest) {
  */
 export async function PUT(req: NextRequest) {
   try {
-    await ensureDir();
+    await ensureDir(STORAGE_DIR);
     const body = await req.json();
     const { id, name, script, description, lastResult } = body;
 
@@ -147,7 +128,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const filePath = safePath(id);
+    const filePath = safePath(STORAGE_DIR, id);
     if (!filePath) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
@@ -189,7 +170,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "id is required" }, { status: 400 });
     }
 
-    const filePath = safePath(id);
+    const filePath = safePath(STORAGE_DIR, id);
     if (!filePath) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }

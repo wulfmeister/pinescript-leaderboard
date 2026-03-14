@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { LeaderboardSection } from "./components/leaderboard-section";
+import { AIQuickGenerate } from "./components/ai-quick-generate";
 import { LEADERBOARD_STRATEGIES, LEADERBOARD_CONFIG } from "./leaderboard-strategies";
 
 const FEATURES: { title: string; description: string; href: string; color: string; icon: LucideIcon }[] = [
@@ -83,6 +84,8 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <AIQuickGenerate />
 
       <LeaderboardSection compact />
 
