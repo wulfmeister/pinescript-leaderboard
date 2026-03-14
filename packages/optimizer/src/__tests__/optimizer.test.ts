@@ -70,7 +70,7 @@ describe("StrategyOptimizer", () => {
     it("throws for script without parameters", async () => {
       const data = mockData(50);
       await expect(
-        optimizer.optimize(`fastEMA = ema(close, 10)`, data, "TEST")
+        optimizer.optimize(`fastEMA = ema(close, 10)`, data, "TEST"),
       ).rejects.toThrow();
     });
 
@@ -84,7 +84,9 @@ describe("StrategyOptimizer", () => {
         ],
       });
       for (let i = 1; i < result.runs.length; i++) {
-        expect(result.runs[i - 1].score).toBeGreaterThanOrEqual(result.runs[i].score);
+        expect(result.runs[i - 1].score).toBeGreaterThanOrEqual(
+          result.runs[i].score,
+        );
       }
     });
   });
@@ -104,6 +106,51 @@ describe("StrategyOptimizer", () => {
       expect(table).toContain("fastLen");
       expect(table).toContain("slowLen");
       expect(table).toContain("|");
+    });
+
+    it("handles topN larger than results", async () => {
+      const data = mockData(200);
+      const result = await optimizer.optimize(SMA_STRATEGY, data, "TEST", {
+        minTrades: 1,
+        parameterRanges: [
+          { name: "fastLen", min: 5, max: 10, step: 5 },
+          { name: "slowLen", min: 20, max: 30, step: 10 },
+        ],
+      });
+      const table = optimizer.formatResultsTable(result, 100);
+      expect(table).toContain("|");
+    });
+
+    it("handles minimal results gracefully", async () => {
+      const data = mockData(200);
+      // Generate results with few combinations to ensure some valid results
+      const result = await optimizer.optimize(SMA_STRATEGY, data, "TEST", {
+        minTrades: 1,
+        parameterRanges: [
+          { name: "fastLen", min: 10, max: 10, step: 5 }, // single value
+          { name: "slowLen", min: 30, max: 30, step: 10 }, // single value
+        ],
+      });
+      const table = optimizer.formatResultsTable(result, 5);
+      expect(typeof table).toBe("string");
+    });
+  });
+
+  describe("error handling", () => {
+    it("throws for invalid script syntax", async () => {
+      const data = mockData(50);
+      await expect(
+        optimizer.optimize("invalid syntax {", data, "TEST"),
+      ).rejects.toThrow();
+    });
+
+    it("throws for insufficient data", async () => {
+      const data = mockData(5);
+      await expect(
+        optimizer.optimize(SMA_STRATEGY, data, "TEST", {
+          minTrades: 100, // impossible with 5 bars
+        }),
+      ).rejects.toThrow();
     });
   });
 });

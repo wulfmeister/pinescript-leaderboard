@@ -68,21 +68,15 @@ test.describe("Leaderboard", () => {
     await expect(page.locator("text=Backtesting")).toBeVisible();
   });
 
-  test("rankings section renders after loading", async ({ page }) => {
+  test("compact leaderboard renders after loading", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("text=Live Leaderboard")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("text=Rankings")).toBeVisible();
+    await expect(page.locator("text=View full rankings")).toBeVisible();
   });
 
   test("score comparison heading visible", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("text=Score Comparison")).toBeVisible({ timeout: 10000 });
-  });
-
-  test("canvas element renders for equity curves", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator("text=Equity Curves Comparison")).toBeVisible({ timeout: 10000 });
-    await expect(page.locator("canvas").first()).toBeVisible();
   });
 
   test("data source badge present", async ({ page }) => {

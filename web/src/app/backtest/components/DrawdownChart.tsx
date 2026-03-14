@@ -45,12 +45,14 @@ export function DrawdownChart({ equityCurve }: Props) {
     chart.timeScale().fitContent();
 
     return () => {
-      try {
-        if (series) {
-          chart.removeSeries(series);
+      if (chartRef.current && series) {
+        try {
+          chartRef.current.removeSeries(series);
+        } catch (e) {
+          if (process.env.NODE_ENV !== "production") {
+            console.warn("DrawdownChart series cleanup:", e);
+          }
         }
-      } catch {
-        // Chart may already be disposed during unmount
       }
     };
   }, [chartRef, drawdownData]);
@@ -74,8 +76,14 @@ export function DrawdownChart({ equityCurve }: Props) {
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-white">Drawdown</h2>
         <div className="flex items-center gap-4">
-          <ChartDatePresets chartRef={chartRef} lastTimestamp={equityCurve[equityCurve.length - 1]?.timestamp} />
-          <ChartScreenshotButton chartRef={chartRef} filename="drawdown-chart.png" />
+          <ChartDatePresets
+            chartRef={chartRef}
+            lastTimestamp={equityCurve[equityCurve.length - 1]?.timestamp}
+          />
+          <ChartScreenshotButton
+            chartRef={chartRef}
+            filename="drawdown-chart.png"
+          />
           <ChartFullscreenToggle containerRef={containerRef} />
           <button onClick={handleResetZoom} className="btn btn-ghost text-xs">
             Reset Zoom

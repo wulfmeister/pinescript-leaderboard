@@ -114,5 +114,6 @@ export const LEADERBOARD_CONFIG = {
   asset: "BTC-USD",
   capital: 10000,
   timeframe: "5m",
+  lookbackDays: 30,
   mock: false,
 } as const;

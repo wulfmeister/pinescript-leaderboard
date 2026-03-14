@@ -134,3 +134,57 @@ describe("DEFAULT_ARENA_CONFIG", () => {
     expect(DEFAULT_ARENA_CONFIG.models.length).toBeGreaterThan(0);
   });
 });
+
+describe("EloRating edge cases", () => {
+  it("handles empty player list", () => {
+    const elo = new EloRating([], 1500, 32);
+    // Should still work, just no players
+    expect(elo.getAll().size).toBe(0);
+  });
+
+  it("handles very large K-factor", () => {
+    const elo = new EloRating(["A", "B"], 1500, 100);
+    elo.update("A", "B", 1);
+    const change = Math.abs(elo.getRating("A") - 1500);
+    expect(change).toBeGreaterThan(10);
+  });
+
+  it("handles very small K-factor", () => {
+    const elo = new EloRating(["A", "B"], 1500, 1);
+    elo.update("A", "B", 1);
+    const change = Math.abs(elo.getRating("A") - 1500);
+    expect(change).toBeLessThan(2);
+  });
+
+  it("handles extreme rating differences", () => {
+    const elo = new EloRating(["A", "B"], 1500, 32);
+    // Give A a huge advantage
+    for (let i = 0; i < 50; i++) {
+      elo.update("A", "B", 1);
+    }
+    const ratingA = elo.getRating("A");
+    const ratingB = elo.getRating("B");
+    expect(ratingA).toBeGreaterThan(ratingB + 100);
+  });
+
+  it("handles consecutive draws", () => {
+    const elo = new EloRating(["A", "B"], 1500, 32);
+    for (let i = 0; i < 10; i++) {
+      elo.update("A", "B", 0.5);
+    }
+    expect(elo.getRating("A")).toBeCloseTo(1500, 0);
+    expect(elo.getRating("B")).toBeCloseTo(1500, 0);
+  });
+
+  it("handles sequential player updates correctly", () => {
+    const elo = new EloRating(["A", "B", "C"], 1500, 32);
+    elo.update("A", "B", 1);
+    elo.update("B", "C", 1);
+    elo.update("C", "A", 1);
+
+    const all = elo.getAll();
+    expect(all.size).toBe(3);
+    // Ratings should have changed
+    expect(all.get("A")).not.toBe(1500);
+  });
+});

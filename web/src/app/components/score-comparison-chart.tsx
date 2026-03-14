@@ -8,7 +8,7 @@ export function ScoreComparisonChart({ results }: { results: RankedResult[] }) {
   const colors = ["#fbbf24", "#9ca3af", "#b45309", "#3f3f46", "#27272a"];
 
   return (
-    <div className="card">
+    <div className="card overflow-visible">
       <h2 className="font-semibold text-white mb-4">Score Comparison</h2>
       <div className="space-y-3">
         {results.map((r, i) => {
@@ -42,7 +42,7 @@ export function ScoreComparisonChart({ results }: { results: RankedResult[] }) {
                   {r.rank}
                 </span>
               </div>
-              <div className="absolute left-28 -top-7 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white whitespace-nowrap invisible group-hover:visible z-10 pointer-events-none">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-white whitespace-nowrap invisible group-hover:visible z-10 pointer-events-none">
                 {r.name}: {r.score.toFixed(4)}
               </div>
             </div>

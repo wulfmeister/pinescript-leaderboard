@@ -119,7 +119,7 @@ describe("WalkForwardAnalyzer", () => {
     it("throws for insufficient data", async () => {
       const data = mockData(10); // too little for 5 windows
       await expect(
-        analyzer.analyze(SMA_STRATEGY, data, "TEST", { windows: 5 })
+        analyzer.analyze(SMA_STRATEGY, data, "TEST", { windows: 5 }),
       ).rejects.toThrow();
     });
   });
@@ -159,6 +159,61 @@ describe("WalkForwardAnalyzer", () => {
       expect(table).toContain("Window");
       expect(table).toContain("Train Score");
       expect(table).toContain("|");
+    });
+  });
+
+  describe("edge cases", () => {
+    it("handles single window analysis", async () => {
+      const data = mockData(200);
+      const result = await analyzer.analyze(SMA_STRATEGY, data, "TEST", {
+        windows: 1,
+        minTrades: 1,
+      });
+      expect(result.windows.length).toBe(1);
+    });
+
+    it("handles variable window counts", async () => {
+      const data = mockData(800);
+      const result = await analyzer.analyze(SMA_STRATEGY, data, "TEST", {
+        windows: 5, // moderate windows with sufficient data
+        minTrades: 1,
+        parameterRanges: [
+          { name: "fastLen", min: 5, max: 15, step: 5 },
+          { name: "slowLen", min: 20, max: 40, step: 10 },
+        ],
+      });
+      expect(result.windows.length).toBeGreaterThanOrEqual(1);
+      expect(result.windows.length).toBeLessThanOrEqual(5);
+    });
+
+    it("uses default parameter ranges when none provided", async () => {
+      const data = mockData(500);
+      const result = await analyzer.analyze(SMA_STRATEGY, data, "TEST", {
+        windows: 2,
+        minTrades: 1,
+      });
+      // Should still run with default parameter detection
+      expect(result.windows.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it("handles slightly larger data for single window", async () => {
+      const data = mockData(100);
+      const result = await analyzer.analyze(SMA_STRATEGY, data, "TEST", {
+        windows: 1,
+        minTrades: 1,
+        trainRatio: 0.7,
+      });
+      expect(result.windows.length).toBe(1);
+    });
+
+    it("throws error for very small data", async () => {
+      const data = mockData(20);
+      await expect(
+        analyzer.analyze(SMA_STRATEGY, data, "TEST", {
+          windows: 1,
+          minTrades: 1,
+        }),
+      ).rejects.toThrow("Walk-forward analysis produced no valid windows");
     });
   });
 });

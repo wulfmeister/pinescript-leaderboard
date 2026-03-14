@@ -2,13 +2,15 @@
 
 import { RankedResult } from "./ranked-result";
 
+const STRATEGY_COLORS = ["#fbbf24", "#9ca3af", "#b45309", "#22c55e", "#3b82f6"];
+
 export function MetricsComparisonChart({ results }: { results: RankedResult[] }) {
   const metrics = [
-    { key: "totalReturn", label: "Return", format: (v: number) => `${(v * 100).toFixed(0)}%`, color: "#22c55e" },
-    { key: "sharpeRatio", label: "Sharpe", format: (v: number) => v.toFixed(1), color: "#3b82f6" },
-    { key: "winRate", label: "Win Rate", format: (v: number) => `${(v * 100).toFixed(0)}%`, color: "#8b5cf6" },
-    { key: "maxDrawdown", label: "Max DD", format: (v: number) => `${(Math.abs(v) * 100).toFixed(0)}%`, color: "#ef4444" },
-    { key: "profitFactor", label: "P.F.", format: (v: number) => v.toFixed(1), color: "#f59e0b" },
+    { key: "totalReturn", label: "Return", format: (v: number) => `${(v * 100).toFixed(0)}%` },
+    { key: "sharpeRatio", label: "Sharpe", format: (v: number) => v.toFixed(1) },
+    { key: "winRate", label: "Win Rate", format: (v: number) => `${(v * 100).toFixed(0)}%` },
+    { key: "maxDrawdown", label: "Max DD", format: (v: number) => `${(Math.abs(v) * 100).toFixed(0)}%` },
+    { key: "profitFactor", label: "P.F.", format: (v: number) => v.toFixed(1) },
   ] as const;
 
   const normalizedData = results.map((r) => ({
@@ -23,7 +25,7 @@ export function MetricsComparisonChart({ results }: { results: RankedResult[] })
     raw: r.metrics,
   }));
 
-  const barWidth = 12;
+  const barWidth = 20;
 
   return (
     <div className="card">
@@ -32,7 +34,7 @@ export function MetricsComparisonChart({ results }: { results: RankedResult[] })
         {metrics.map((metric) => (
           <div key={metric.key} className="flex items-center gap-3">
             <div className="w-20 text-sm text-zinc-400">{metric.label}</div>
-            <div className="flex-1 flex items-end gap-1 h-16 bg-zinc-800/50 rounded-lg px-2 py-2">
+            <div className="flex-1 flex items-end gap-2 h-24 bg-zinc-800/50 rounded-lg px-2 py-2 overflow-visible relative">
               {normalizedData.map((d, i) => {
                 const height = d.values[metric.key as keyof typeof d.values];
                 return (
@@ -48,8 +50,7 @@ export function MetricsComparisonChart({ results }: { results: RankedResult[] })
                       className="w-full rounded-t transition-all duration-500"
                       style={{
                         height: `${Math.max(height, 4)}%`,
-                        backgroundColor: metric.color,
-                        opacity: 0.7 + (i === 0 ? 0.3 : 0),
+                        backgroundColor: STRATEGY_COLORS[i % STRATEGY_COLORS.length],
                       }}
                     />
                   </div>
@@ -68,7 +69,7 @@ export function MetricsComparisonChart({ results }: { results: RankedResult[] })
             <div
               className="w-3 h-3 rounded"
               style={{
-                backgroundColor: ["#fbbf24", "#9ca3af", "#b45309"][i] || "#3f3f46",
+                backgroundColor: STRATEGY_COLORS[i % STRATEGY_COLORS.length],
               }}
             />
             <span className="text-xs text-zinc-400">{r.name}</span>

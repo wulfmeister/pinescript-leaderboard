@@ -1,56 +1,72 @@
 import Link from "next/link";
+import {
+  Play,
+  Trophy,
+  SlidersHorizontal,
+  ArrowRightLeft,
+  Sparkles,
+  Download,
+  type LucideIcon,
+} from "lucide-react";
 import { LeaderboardSection } from "./components/leaderboard-section";
+import { LEADERBOARD_STRATEGIES, LEADERBOARD_CONFIG } from "./leaderboard-strategies";
 
-const FEATURES = [
+const FEATURES: { title: string; description: string; href: string; color: string; icon: LucideIcon }[] = [
   {
     title: "Backtest",
     description: "Run PineScript strategies against historical data with full performance metrics",
     href: "/backtest",
     color: "border-blue-800/50 hover:border-blue-600",
+    icon: Play,
   },
   {
     title: "Rank Strategies",
     description: "Compare multiple strategies head-to-head and see which performs best",
     href: "/rank",
     color: "border-purple-800/50 hover:border-purple-600",
+    icon: Trophy,
   },
   {
     title: "Optimize",
     description: "Grid search over strategy parameters to find the optimal configuration",
     href: "/optimize",
     color: "border-green-800/50 hover:border-green-600",
+    icon: SlidersHorizontal,
   },
   {
     title: "Walk-Forward",
     description: "Validate optimized parameters on out-of-sample data with rolling windows",
     href: "/walk-forward",
     color: "border-yellow-800/50 hover:border-yellow-600",
+    icon: ArrowRightLeft,
   },
   {
     title: "LLM Arena",
     description: "Generate strategies with Venice AI, or run multi-model tournaments",
     href: "/arena",
     color: "border-red-800/50 hover:border-red-600",
+    icon: Sparkles,
   },
   {
     title: "Export",
     description: "Build strategies from templates and export valid PineScript v5 for TradingView",
     href: "/export",
     color: "border-cyan-800/50 hover:border-cyan-600",
+    icon: Download,
   },
 ];
 
 const STATS = [
-  { label: "Packages", value: "12" },
-  { label: "Indicators", value: "15" },
-  { label: "Unit Tests", value: "187" },
-  { label: "Strategies", value: "8" },
+  { label: "Strategies", value: String(LEADERBOARD_STRATEGIES.length) },
+  { label: "Asset", value: LEADERBOARD_CONFIG.asset },
+  { label: "Timeframe", value: LEADERBOARD_CONFIG.timeframe },
+  { label: "Lookback", value: `${LEADERBOARD_CONFIG.lookbackDays}d` },
 ];
 
 export default function Home() {
   return (
-    <div className="space-y-12">
-      <section className="text-center py-16">
+    <div className="space-y-10">
+      <section className="text-center py-12">
         <h1 className="text-5xl font-bold tracking-tight text-white mb-4">
           PineScript Utils
         </h1>
@@ -68,12 +84,15 @@ export default function Home() {
         </div>
       </section>
 
-      <LeaderboardSection />
+      <LeaderboardSection compact />
 
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section>
+        <h2 className="text-lg font-semibold text-white mb-4">Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {FEATURES.map((f) => (
           <Link key={f.href} href={f.href}>
             <div className={`card ${f.color} transition-colors cursor-pointer h-full`}>
+              <f.icon className="w-5 h-5 text-zinc-500 mb-2" />
               <h2 className="text-lg font-semibold text-white mb-2">
                 {f.title}
               </h2>
@@ -81,6 +100,7 @@ export default function Home() {
             </div>
           </Link>
         ))}
+        </div>
       </section>
 
       <section className="card">

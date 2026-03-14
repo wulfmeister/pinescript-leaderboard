@@ -123,9 +123,22 @@ export function useChartTooltip(
 
       if (value !== undefined) {
         tooltip.textContent = formatValue(value);
-        tooltip.style.left = `${param.point.x + 10}px`;
-        tooltip.style.top = `${param.point.y + 10}px`;
         tooltip.style.display = "block";
+
+        let x = param.point.x + 10;
+        let y = param.point.y + 10;
+
+        // Clamp to container bounds
+        const cw = container.clientWidth;
+        const ch = container.clientHeight;
+        const tw = tooltip.offsetWidth;
+        const th = tooltip.offsetHeight;
+
+        if (x + tw > cw) x = param.point.x - tw - 10;
+        if (y + th > ch) y = param.point.y - th - 10;
+
+        tooltip.style.left = `${Math.max(0, x)}px`;
+        tooltip.style.top = `${Math.max(0, y)}px`;
       } else {
         tooltip.style.display = "none";
       }
