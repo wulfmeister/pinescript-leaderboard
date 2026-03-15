@@ -8,6 +8,9 @@ const nextConfig = {
     "@pinescript-utils/reporter",
     "@pinescript-utils/ranker",
     "@pinescript-utils/venice",
+    "@pinescript-utils/optimizer",
+    "@pinescript-utils/walk-forward",
+    "@pinescript-utils/alpha-lab",
   ],
 };
 

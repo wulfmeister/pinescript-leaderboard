@@ -1,0 +1,31 @@
+{
+  "name": "@pinescript-utils/alpha-lab",
+  "version": "1.0.0",
+  "description": "AI-driven strategy evolution, factor synthesis, and adaptive walk-forward optimization",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@pinescript-utils/core": "file:../core",
+    "@pinescript-utils/pine-runtime": "file:../pine-runtime",
+    "@pinescript-utils/backtester": "file:../backtester",
+    "@pinescript-utils/optimizer": "file:../optimizer",
+    "@pinescript-utils/walk-forward": "file:../walk-forward",
+    "@pinescript-utils/venice": "file:../venice"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2"
+  }
+}

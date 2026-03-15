@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/gallery", label: "Gallery" },
   { href: "/arena", label: "LLM Arena" },
+  { href: "/alpha-lab", label: "Alpha Lab" },
   { href: "/export", label: "Export" },
 ];
 
@@ -49,7 +50,11 @@ export function NavBar() {
           {/* Desktop nav */}
           <div className="hidden lg:flex gap-1">
             {NAV_ITEMS.map((item) => (
-              <Link key={item.href} href={item.href} className={linkClass(item.href)}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={linkClass(item.href)}
+              >
                 {item.label}
               </Link>
             ))}
@@ -61,11 +66,23 @@ export function NavBar() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
             {menuOpen ? (
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M6 6l12 12M6 18L18 6" />
               </svg>
             ) : (
-              <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
